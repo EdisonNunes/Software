@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 
-
 coluna_esquerda, coluna_direita = st.columns([1,1.5]) # Cria 2 colunas e a segunda é 50% maior que a primeira
 
 coluna_esquerda.title('FM Analytics')
