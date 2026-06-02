@@ -1,0 +1,80 @@
+# Git Ignore - SA Solutions
+
+# Segredos e arquivos sensíveis
+.streamlit/secrets.toml
+.env
+.env.local
+.env.*.local
+
+# Ambiente Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Streamlit
+.streamlit/cache/
+.streamlit/cache_resource/
+.streamlit/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Arquivos temporários
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Documentos gerados
+*.pdf
+*.docx
+*.xlsx
+!Propostas/
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+*.cache
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Arquivos de Sistema
+Thumbs.db
+
+# Versão antiga (durante refatoração)
+*.OLD
+*.old
+maladiretaOLD.py
+propostaOLD.py
