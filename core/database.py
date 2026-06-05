@@ -34,6 +34,16 @@ def get_supabase_client() -> Client:
         logger.info("Conectando ao Supabase...")
         
         client = create_client(config["url"], config["key"])
+
+        access_token = st.session_state.get("supabase_access_token")
+        refresh_token = st.session_state.get("supabase_refresh_token")
+        if access_token and refresh_token:
+            try:
+                client.auth.set_session(access_token, refresh_token)
+            except Exception:
+                logger.warning("Não foi possível restaurar sessão Supabase do Streamlit state")
+        elif "supabase_access_token" in st.session_state or "supabase_refresh_token" in st.session_state:
+            logger.warning("Sessão Supabase disponível mas incompleta: access_token/refresh_token ausentes")
         
         # Testar conexão
         response = client.table("clientes").select("id").limit(1).execute()

@@ -198,6 +198,16 @@ class SupabaseProxy:
             config = settings.get_supabase_config()
             self._client = create_client(config["url"], config["key"])
 
+            access_token = st.session_state.get("supabase_access_token")
+            refresh_token = st.session_state.get("supabase_refresh_token")
+            if access_token and refresh_token:
+                try:
+                    self._client.auth.set_session(access_token, refresh_token)
+                except Exception:
+                    logger.warning(
+                        "Não foi possível restaurar sessão Supabase no proxy crud"
+                    )
+
     def __getattr__(self, name):
         """Delegar chamadas para o cliente Supabase real."""
         self._ensure_client()
@@ -279,7 +289,7 @@ def listar_clientes(filtro_empresa=""):
 def listar_todos_dados_clientes():
     query = supabase.table("clientes").select("*").order("empresa", desc=False)
     response = query.execute()
-    # print(response.data)
+    #print(response.data)
     return response.data
 def incluir_cliente(dados):
     existe = supabase.table("clientes").select("*") \

@@ -13,201 +13,84 @@ if "user" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state.user_name = None
 
-# #import streamlit_authenticator as stauth
-
 # Tela de login antes da navegação principal
 if not st.session_state.authenticated:
+    st.title("Login")
+    st.write("Informe seu usuário e senha para acessar o aplicativo.")
 
-    st.markdown("""
-    <style>
+    with st.form("login_form"):
+        username = st.text_input("Usuário", value="")
+        password = st.text_input("Senha", type="password")
+        submitted = st.form_submit_button("Entrar")
 
-    .stApp {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-    }
+        if submitted:
+            try:
+                supabase_client = get_supabase_client()
+                auth = supabase_client.auth
 
-    .login-card {
-        background: white;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.25);
-        margin-top: 40px;
-    }
+                if hasattr(auth, "sign_in_with_password"):
+                    response = auth.sign_in_with_password({
+                        "email": username,
+                        "password": password,
+                    })
+                else:
+                    response = auth.sign_in(email=username, password=password)
 
-    .login-title {
-        text-align: center;
-        font-size: 30px;
-        font-weight: 700;
-        color: #0F172A;
-        margin-top: 10px;
-        margin-bottom: 5px;
-    }
+                error = getattr(response, "error", None)
+                if isinstance(response, dict) and error is None:
+                    error = response.get("error")
 
-    .login-subtitle {
-        text-align: center;
-        color: #64748B;
-        margin-bottom: 30px;
-    }
+                session = getattr(response, "session", None)
+                if isinstance(response, dict) and session is None:
+                    session = response.get("session")
 
-    .stTextInput > div > div > input {
-        border-radius: 10px;
-        height: 48px;
-    }
-
-    .stButton > button {
-        width: 100%;
-        height: 52px;
-        border-radius: 10px;
-        border: none;
-        background-color: #2563EB;
-        color: white;
-        font-size: 16px;
-        font-weight: 600;
-    }
-
-    .stButton > button:hover {
-        background-color: #1D4ED8;
-    }
-
-    header[data-testid="stHeader"] {
-        display:none;
-    }
-
-    </style>
-    """, unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1, 1.2, 1])
-
-    with col2:
-
- #       st.markdown('<div class="login-card">', unsafe_allow_html=True)
-
-        st.markdown( 
-            '<div class="login-title">FBJ Pharma</div>',
-            unsafe_allow_html=True, 
-        )
-
-        st.markdown(
-            '<div class="login-subtitle">Entre com suas credenciais para acessar o sistema</div>',
-            unsafe_allow_html=True
-        )
-
-        with st.form("login_form"):
-
-            username = st.text_input(
-                "E-mail",
-                placeholder="usuario@empresa.com"
-            )
-
-            password = st.text_input(
-                "Senha",
-                type="password",
-                placeholder="Digite sua senha"
-            )
-
-            submitted = st.form_submit_button("Entrar")
-
-            if submitted:
-
-                try:
-
-                    supabase_client = get_supabase_client()
-                    auth = supabase_client.auth
-
-                    if hasattr(auth, "sign_in_with_password"):
-                        response = auth.sign_in_with_password({
-                            "email": username,
-                            "password": password,
-                        })
+                if error:
+                    st.error("Usuário ou senha inválidos. Verifique seu login no Supabase.")
+                elif session is None:
+                    st.error("Falha na autenticação. Tente novamente.")
+                else:
+                    access_token = None
+                    refresh_token = None
+                    if isinstance(session, dict):
+                        access_token = session.get("access_token")
+                        refresh_token = session.get("refresh_token")
+                        user_obj = session.get("user")
                     else:
-                        response = auth.sign_in(
-                            email=username,
-                            password=password
-                        )
+                        access_token = getattr(session, "access_token", None)
+                        refresh_token = getattr(session, "refresh_token", None)
+                        user_obj = getattr(session, "user", None)
 
-                    error = getattr(response, "error", None)
-
-                    if isinstance(response, dict) and error is None:
-                        error = response.get("error")
-
-                    session = getattr(response, "session", None)
-
-                    if isinstance(response, dict) and session is None:
-                        session = response.get("session")
-
-                    if error:
-
-                        st.error(
-                            "Usuário ou senha inválidos."
-                        )
-
-                    elif session is None:
-
-                        st.error(
-                            "Falha na autenticação. Tente novamente."
-                        )
-
+                    if access_token and refresh_token:
+                        supabase_client.auth.set_session(access_token, refresh_token)
                     else:
+                        st.warning("Sessão Supabase recebeu token incompleto; autenticação pode não persistir corretamente.")
 
-                        access_token = None
-                        refresh_token = None
-
-                        if isinstance(session, dict):
-
-                            access_token = session.get("access_token")
-                            refresh_token = session.get("refresh_token")
-                            user_obj = session.get("user")
-
-                        else:
-
-                            access_token = getattr(
-                                session,
-                                "access_token",
-                                None
-                            )
-
-                            refresh_token = getattr(
-                                session,
-                                "refresh_token",
-                                None
-                            )
-
-                            user_obj = getattr(
-                                session,
-                                "user",
-                                None
-                            )
-
-                        if access_token and refresh_token:
-
-                            supabase_client.auth.set_session(
-                                access_token,
-                                refresh_token
-                            )
-
-                        st.session_state.authenticated = True
-                        st.session_state.user = username
-                        st.session_state.user_name = username
-
-                        st.session_state.supabase_access_token = access_token
-                        st.session_state.supabase_refresh_token = refresh_token
-
-                        st.session_state.user_id = (
-                            user_obj.get("id")
-                            if isinstance(user_obj, dict)
-                            else getattr(user_obj, "id", None)
-                        )
-
-                        st.rerun()
-
-                except Exception as e:
-
-                    st.error(
-                        f"Erro ao autenticar com Supabase: {e}"
+                    st.session_state.authenticated = True
+                    st.session_state.user = username
+                    st.session_state.user_name = username
+                    st.session_state.supabase_access_token = access_token
+                    st.session_state.supabase_refresh_token = refresh_token
+                    st.session_state.user_id = (
+                        user_obj.get("id") if isinstance(user_obj, dict) else getattr(user_obj, "id", None)
                     )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+                    st.write("--- DEBUG AUTENTICAÇÃO ---")
+                    st.write("access_token ok:", bool(access_token))
+                    st.write("refresh_token ok:", bool(refresh_token))
+                    st.write("session user id:", st.session_state.user_id)
+                    st.write("session object:", session)
+                    st.write("supabase auth session:", supabase_client.auth.get_session())
+                    st.write("--- FIM DEBUG ---")
 
-    st.stop()
+                    #st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao autenticar com Supabase: {e}")
+
+    if not st.session_state.authenticated:
+        st.stop()
+
+# #import streamlit_authenticator as stauth
+
 
 def read_streamlit_theme():
     config_path = Path(__file__).resolve().parent / ".streamlit" / "config.toml"
