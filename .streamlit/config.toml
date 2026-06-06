@@ -1,5 +1,9 @@
 [theme]
-base = 'dark'
+base = 'custom'
+backgroundColor = '#1F1F3A'
+secondaryBackgroundColor = '#0F172A'
+primaryColor = '#6BBF59'
+textColor = '#E8EDF8'
 
 [server]
 enableXsrfProtection = false

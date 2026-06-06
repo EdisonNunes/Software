@@ -5,11 +5,44 @@ import re
 ROOT_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = ROOT_DIR / ".streamlit" / "config.toml"
 
-DEFAULT_THEME = "Black"
-THEME_OPTIONS = ["Black", "White", "Custom"]
-THEME_MAPPING = {
-    "Black": "dark",
-    "White": "light",
+THEME_OPTIONS = [
+    "Dark",
+    "Light",
+    "Personalizado 1 - Azul suave e profissional",
+    "Personalizado 2 - Azul Mesclado",
+    "Personalizado 3 - Tons de Cinza",
+    "Personalizado 4 - Minimalista Escuro",
+]
+
+THEME_PRESETS = {
+    "Personalizado 1 - Azul suave e profissional": {
+        "base": "custom",
+        "backgroundColor": "#F4F7FA",
+        "secondaryBackgroundColor": "#DCE6F1",
+        "primaryColor": "#5A78D1",
+        "textColor": "#1F2A44",
+    },
+    "Personalizado 2 - Azul Mesclado": {
+        "base": "custom",
+        "backgroundColor": "#1F1F3A",
+        "secondaryBackgroundColor": "#0F172A",
+        "primaryColor": "#6BBF59",
+        "textColor": "#E8EDF8",
+    },
+    "Personalizado 3 - Tons de Cinza": {
+        "base": "custom",
+        "backgroundColor": "#34373F",
+        "secondaryBackgroundColor": "#2B2F35",
+        "primaryColor": "#7D7F85",
+        "textColor": "#E3E5E8",
+    },
+    "Personalizado 4 - Minimalista Escuro": {
+        "base": "custom",
+        "backgroundColor": "#11131A",
+        "secondaryBackgroundColor": "#1C2330",
+        "primaryColor": "#8AA6C1",
+        "textColor": "#E8EDF8",
+    },
 }
 
 
@@ -55,13 +88,31 @@ def write_theme_section(props: dict):
     CONFIG_FILE.write_text(content, encoding="utf-8")
 
 
+def find_preset_for_theme(theme: dict) -> str:
+    for preset_name, preset_values in THEME_PRESETS.items():
+        if all(theme.get(key) == preset_values.get(key) for key in preset_values):
+            return preset_name
+    return ""
+
+
 def read_theme_selection():
     theme = read_theme_config()
-    if theme["backgroundColor"] or theme["secondaryBackgroundColor"]:
-        return "Custom"
     if theme["base"] == "light":
-        return "White"
-    return "Black"
+        return "Light"
+    if theme["base"] == "dark":
+        return "Dark"
+    if theme["base"] == "custom":
+        preset = find_preset_for_theme(theme)
+        if preset:
+            return preset
+        if theme["backgroundColor"]:
+            hex_value = theme["backgroundColor"].lstrip("#")
+            if len(hex_value) == 3:
+                hex_value = "".join([c * 2 for c in hex_value])
+            r, g, b = int(hex_value[0:2], 16), int(hex_value[2:4], 16), int(hex_value[4:6], 16)
+            brightness = (r * 299 + g * 587 + b * 114) / 1000
+            return "Light" if brightness > 128 else "Dark"
+    return "Dark"
 
 
 def normalize_color(value: str, default: str):
@@ -84,170 +135,101 @@ st.title("Layout")
 current_theme = read_theme_selection()
 config = read_theme_config()
 
-selected_theme = st.radio("Escolha o tema de layout", THEME_OPTIONS, index=THEME_OPTIONS.index(current_theme))
+selected_theme = st.radio(
+    "Escolha o tema de layout",
+    THEME_OPTIONS,
+    index=THEME_OPTIONS.index(current_theme) if current_theme in THEME_OPTIONS else 0,
+)
 
-custom_background_color = config["backgroundColor"] or "#0E1117"
-custom_secondary_color = config["secondaryBackgroundColor"] or "#111111"
-custom_primary_color = config["primaryColor"] or "#111111"
-custom_text_color = config["textColor"] or "#FFFFFF"
-
-if selected_theme == "Custom":
-    st.markdown("### Tema pessoal")
-    st.write("Customize todas as cores do seu tema:")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        background_color = st.color_picker("Cor Área Dados (backgroundColor)", value=custom_background_color)
-        primary_color = st.color_picker("Cor primária (primaryColor)", value=custom_primary_color)
-    with col2:
-        secondary_color = st.color_picker("Cor do Menu (BackgroundColor)", value=custom_secondary_color)
-        text_color = st.color_picker("Cor do texto (textColor)", value=custom_text_color)
-
-    # Preview das cores individuais
-    preview_colors = f"""
-    <div style='display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:16px;'>
-      <div style='padding:12px; border-radius:10px; background:{background_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>backgroundColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{background_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{secondary_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>secondaryBackgroundColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{secondary_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{primary_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>primaryColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{primary_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{background_color}; border:2px solid #666;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>textColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{text_color}</div>
-      </div>
-    </div>
-    """
-    st.markdown(preview_colors, unsafe_allow_html=True)
-
-    # Preview completo do aplicativo com as cores escolhidas
-    preview_md = f"""
-    ### Preview completo do tema customizado
-    <div style='display:flex; gap:16px; margin-top:16px;'>
-      <div style='flex:1; background:{secondary_color}; border-radius:14px; padding:18px;'>
-        <div style='color:{text_color}; font-size:18px; font-weight:700; margin-bottom:8px;'>Menu (Sidebar)</div>
-        <div style='color:{text_color}; font-size:14px;'>Navegação</div>
-        <div style='color:{text_color}; margin-top:12px;'>
-          <div style="margin-bottom:8px; padding:8px; background:{background_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 1</div>
-          <div style="margin-bottom:8px; padding:8px; background:{background_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 2</div>
-          <div style="padding:8px; background:{background_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 3</div>
-        </div>
-      </div>
-      <div style='flex:2; background:{background_color}; border-radius:14px; padding:18px;'>
-        <div style='color:{text_color}; font-size:20px; font-weight:700; margin-bottom:12px;'>Área de dados</div>
-        <div style='color:{text_color}; font-size:14px; margin-bottom:14px;'>Exemplo de conteúdo principal com as cores selecionadas.</div>
-        <div style='display:flex; gap:10px; flex-wrap:wrap;'>
-          <span style='background:{primary_color}; color:{text_color}; padding:10px 14px; border-radius:10px; font-weight:600;'>Botão Primário</span>
-          <span style='background:{secondary_color}; color:{text_color}; padding:10px 14px; border-radius:10px; font-weight:600; border:2px solid {primary_color};'>Botão Secundário</span>
-        </div>
-      </div>
-    </div>
-    """
-    st.markdown(preview_md, unsafe_allow_html=True)
-    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+if selected_theme in THEME_PRESETS:
+    theme_values = THEME_PRESETS[selected_theme]
+    st.markdown(f"### {selected_theme}")
+    st.write("Tema personalizado pré-configurado com cores e visualização de exemplo.")
 else:
-    if selected_theme == "Black":
-        menu_color = "#111111"
-        data_color = "#0E1117"
-        primary_color = "#111111"
-        text_color = "#FFFFFF"
-    else:
-        menu_color = "#F1F3F5"
-        data_color = "#FFFFFF"
-        primary_color = "#F1F3F5"
-        text_color = "#111111"
+    theme_values = {
+        "base": "dark" if selected_theme == "Dark" else "light",
+        "backgroundColor": None,
+        "secondaryBackgroundColor": None,
+        "primaryColor": None,
+        "textColor": None,
+    }
+    st.markdown(f"### Tema {selected_theme}")
+    st.write("Tema padrão do Streamlit.")
 
-    # Exibir parâmetros em modo read-only
-    st.markdown(f"### Parâmetros do tema {selected_theme}")
-    st.info("Os parâmetros abaixo não podem ser alterados neste tema predefinido. Use Custom para editar todas as cores.")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.text_input("backgroundColor", value=data_color, disabled=True)
-        st.text_input("primaryColor", value=primary_color, disabled=True)
-    with col2:
-        st.text_input("secondaryBackgroundColor", value=menu_color, disabled=True)
-        st.text_input("textColor", value=text_color, disabled=True)
+background_color = theme_values["backgroundColor"] or ("#0E1117" if selected_theme == "Dark" else "#FFFFFF")
+secondary_color = theme_values["secondaryBackgroundColor"] or ("#111111" if selected_theme == "Dark" else "#F1F3F5")
+primary_color = theme_values["primaryColor"] or ("#111111" if selected_theme == "Dark" else "#F1F3F5")
+text_color = theme_values["textColor"] or ("#FFFFFF" if selected_theme == "Dark" else "#111111")
 
-    # Preview das cores individuais
-    preview_colors = f"""
-    <div style='display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:16px;'>
-      <div style='padding:12px; border-radius:10px; background:{data_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>backgroundColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{data_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{menu_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>secondaryBackgroundColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{menu_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{primary_color}; border:2px solid #333;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>primaryColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{primary_color}</div>
-      </div>
-      <div style='padding:12px; border-radius:10px; background:{data_color}; border:2px solid #666;'>
-        <div style='color:{text_color}; font-size:12px; font-weight:700; margin-bottom:4px;'>textColor</div>
-        <div style='color:{text_color}; font-size:10px;'>{text_color}</div>
-      </div>
+# Mostra os valores do tema
+col1, col2 = st.columns(2)
+with col1:
+    st.text_input("backgroundColor", value=background_color, disabled=True)
+    st.text_input("primaryColor", value=primary_color, disabled=True)
+with col2:
+    st.text_input("secondaryBackgroundColor", value=secondary_color, disabled=True)
+    st.text_input("textColor", value=text_color, disabled=True)
+
+# Preview de cada cor individual
+preview_colors = f"""
+<div style='display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:16px;'>
+  <div style='padding:12px; border-radius:10px; background:{background_color}; border:2px solid #333;'>
+    <div style='color:{choose_text_color(background_color)}; font-size:12px; font-weight:700; margin-bottom:4px;'>backgroundColor</div>
+    <div style='color:{choose_text_color(background_color)}; font-size:10px;'>{background_color}</div>
+  </div>
+  <div style='padding:12px; border-radius:10px; background:{secondary_color}; border:2px solid #333;'>
+    <div style='color:{choose_text_color(secondary_color)}; font-size:12px; font-weight:700; margin-bottom:4px;'>secondaryBackgroundColor</div>
+    <div style='color:{choose_text_color(secondary_color)}; font-size:10px;'>{secondary_color}</div>
+  </div>
+  <div style='padding:12px; border-radius:10px; background:{primary_color}; border:2px solid #333;'>
+    <div style='color:{choose_text_color(primary_color)}; font-size:12px; font-weight:700; margin-bottom:4px;'>primaryColor</div>
+    <div style='color:{choose_text_color(primary_color)}; font-size:10px;'>{primary_color}</div>
+  </div>
+  <div style='padding:12px; border-radius:10px; background:{background_color}; border:2px solid #666;'>
+    <div style='color:{choose_text_color(background_color)}; font-size:12px; font-weight:700; margin-bottom:4px;'>textColor</div>
+    <div style='color:{choose_text_color(background_color)}; font-size:10px;'>{text_color}</div>
+  </div>
+</div>
+"""
+st.markdown(preview_colors, unsafe_allow_html=True)
+
+preview_md = f"""
+### Preview completo do tema selecionado
+<div style='display:flex; gap:16px; margin-top:16px;'>
+  <div style='flex:1; background:{secondary_color}; border-radius:14px; padding:18px;'>
+    <div style='color:{choose_text_color(secondary_color)}; font-size:18px; font-weight:700; margin-bottom:8px;'>Menu (Sidebar)</div>
+    <div style='color:{choose_text_color(secondary_color)}; font-size:14px;'>Navegação</div>
+    <div style='color:{choose_text_color(secondary_color)}; margin-top:12px;'>
+      <div style="margin-bottom:8px; padding:8px; background:{background_color}; border-radius:6px; color:{choose_text_color(background_color)}; border-left:4px solid {primary_color};">• Item 1</div>
+      <div style="margin-bottom:8px; padding:8px; background:{background_color}; border-radius:6px; color:{choose_text_color(background_color)}; border-left:4px solid {primary_color};">• Item 2</div>
+      <div style="padding:8px; background:{background_color}; border-radius:6px; color:{choose_text_color(background_color)}; border-left:4px solid {primary_color};">• Item 3</div>
     </div>
-    """
-    st.markdown(preview_colors, unsafe_allow_html=True)
-
-    # Preview completo do aplicativo
-    default_preview = f"""
-    ### Preview completo do tema {selected_theme}
-    <div style='display:flex; gap:16px; margin-top:16px;'>
-      <div style='flex:1; background:{menu_color}; border-radius:14px; padding:18px;'>
-        <div style='color:{choose_text_color(menu_color)}; font-size:18px; font-weight:700; margin-bottom:8px;'>Menu (Sidebar)</div>
-        <div style='color:{choose_text_color(menu_color)}; font-size:14px;'>Navegação</div>
-        <div style='color:{choose_text_color(menu_color)}; margin-top:12px;'>
-          <div style="margin-bottom:8px; padding:8px; background:{data_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 1</div>
-          <div style="margin-bottom:8px; padding:8px; background:{data_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 2</div>
-          <div style="padding:8px; background:{data_color}; border-radius:6px; color:{text_color};border-left:4px solid {primary_color};">• Item 3</div>
-        </div>
-      </div>
-      <div style='flex:2; background:{data_color}; border-radius:14px; padding:18px;'>
-        <div style='color:{choose_text_color(data_color)}; font-size:20px; font-weight:700; margin-bottom:12px;'>Área de dados</div>
-        <div style='color:{choose_text_color(data_color)}; font-size:14px; margin-bottom:14px;'>Exemplo de conteúdo principal com as cores do tema {selected_theme}.</div>
-        <div style='display:flex; gap:10px; flex-wrap:wrap;'>
-          <span style='background:{primary_color}; color:{choose_text_color(primary_color)}; padding:10px 14px; border-radius:10px; font-weight:600;'>Botão Primário</span>
-          <span style='background:{menu_color}; color:{choose_text_color(menu_color)}; padding:10px 14px; border-radius:10px; font-weight:600; border:2px solid {primary_color};'>Botão Secundário</span>
-        </div>
-      </div>
+  </div>
+  <div style='flex:2; background:{background_color}; border-radius:14px; padding:18px;'>
+    <div style='color:{choose_text_color(background_color)}; font-size:20px; font-weight:700; margin-bottom:12px;'>Área de dados</div>
+    <div style='color:{choose_text_color(background_color)}; font-size:14px; margin-bottom:14px;'>Exemplo de conteúdo principal com as cores do tema selecionado.</div>
+    <div style='display:flex; gap:10px; flex-wrap:wrap;'>
+      <span style='background:{primary_color}; color:{choose_text_color(primary_color)}; padding:10px 14px; border-radius:10px; font-weight:600;'>Botão Primário</span>
+      <span style='background:{secondary_color}; color:{choose_text_color(secondary_color)}; padding:10px 14px; border-radius:10px; font-weight:600; border:2px solid {primary_color};'>Botão Secundário</span>
     </div>
-    """
-    st.markdown(default_preview, unsafe_allow_html=True)
-    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+  </div>
+</div>
+"""
+st.markdown(preview_md, unsafe_allow_html=True)
 
 if st.button("Salvar"):
-    if selected_theme == "Custom":
-        background_color = normalize_color(background_color, custom_background_color)
-        secondary_color = normalize_color(secondary_color, custom_secondary_color)
-        primary_color = normalize_color(primary_color, custom_primary_color)
-        text_color = normalize_color(text_color, custom_text_color)
-        write_theme_section({
-            "base": "dark",
-            "backgroundColor": background_color,
-            "secondaryBackgroundColor": secondary_color,
-            "primaryColor": primary_color,
-            "textColor": text_color,
-        })
-        st.success("Tema pessoal salvo. Atualize a página para aplicar as mudanças.")
+    if selected_theme in THEME_PRESETS:
+        write_theme_section(theme_values)
+        st.success(f"Tema {selected_theme} salvo em .streamlit/config.toml. Atualize a página para aplicar.")
     else:
-        base = THEME_MAPPING[selected_theme]
         write_theme_section({
-            "base": base,
+            "base": theme_values["base"],
             "backgroundColor": None,
             "secondaryBackgroundColor": None,
             "primaryColor": None,
             "textColor": None,
         })
-        st.success(f"Layout alterado para {selected_theme}. Atualize a página para aplicar as mudanças.")
+        st.success(f"Tema {selected_theme} salvo em .streamlit/config.toml. Atualize a página para aplicar.")
 
-# st.write("\nConfiguração atual em `.streamlit/config.toml`:")
 st.write("\nConfiguração atual :")
 st.code(CONFIG_FILE.read_text(encoding="utf-8") if CONFIG_FILE.exists() else "(arquivo não existe)")
