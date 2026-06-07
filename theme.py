@@ -108,7 +108,7 @@ def apply_streamlit_theme():
     hide_streamlit_style = """
         <style>
         html, body, [data-testid=\"stAppViewContainer\"], [data-testid=\"stAppViewContainer\"] * {
-            font-size: 18px !important;
+            font-size: 16px !important;
             line-height: 1.5 !important;
         }
         [data-testid=\"stAppViewContainer\"] h1,
