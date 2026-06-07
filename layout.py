@@ -16,28 +16,28 @@ THEME_OPTIONS = [
 
 THEME_PRESETS = {
     "Personalizado 1 - Azul suave e profissional": {
-        "base": "custom",
+        "base": "light",
         "backgroundColor": "#F4F7FA",
         "secondaryBackgroundColor": "#DCE6F1",
         "primaryColor": "#5A78D1",
         "textColor": "#1F2A44",
     },
     "Personalizado 2 - Azul Mesclado": {
-        "base": "custom",
+        "base": "dark",
         "backgroundColor": "#1F1F3A",
         "secondaryBackgroundColor": "#0F172A",
         "primaryColor": "#6BBF59",
         "textColor": "#E8EDF8",
     },
     "Personalizado 3 - Tons de Cinza": {
-        "base": "custom",
+        "base": "dark",
         "backgroundColor": "#34373F",
         "secondaryBackgroundColor": "#2B2F35",
         "primaryColor": "#7D7F85",
         "textColor": "#E3E5E8",
     },
     "Personalizado 4 - Minimalista Escuro": {
-        "base": "custom",
+        "base": "dark",
         "backgroundColor": "#11131A",
         "secondaryBackgroundColor": "#1C2330",
         "primaryColor": "#8AA6C1",
