@@ -93,7 +93,9 @@ if st.session_state.aba == "Listar":
     if st.button("Limpar seleção de cliente"):
         st.session_state.cliente_selecionado = None
         st.rerun()
-
+    # # print("ID do cliente selecionado para filtro de produtos:", cliente.get('id') or cliente.get('id_cliente'))
+    # # print("Cliente selecionado (completo):", cliente)
+    
     produtos = listar_produtos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
     total = len(produtos)
     inicio = st.session_state.pagina * PAGE_SIZE

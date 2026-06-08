@@ -149,8 +149,8 @@ def authenticate_user(username: str, password: str):
 
         error = getattr(response, "error", None)
 
-        #print("Resposta da autenticação:", response)
-        #print("Erro da autenticação:", error)
+        print("Resposta da autenticação:", response)
+        # print("Erro da autenticação:", error)
         
         if isinstance(response, dict) and error is None:
             error = response.get("error")
@@ -158,6 +158,7 @@ def authenticate_user(username: str, password: str):
         session = getattr(response, "session", None)
         if isinstance(response, dict) and session is None:
             session = response.get("session")
+          
 
         if error:
             st.error("Usuário ou senha inválidos.")
@@ -182,6 +183,7 @@ def handle_successful_auth(session, username: str):
         access_token = session.get("access_token")
         refresh_token = session.get("refresh_token")
         user_obj = session.get("user")
+        # print("Sessão (dict):", session)
     else:
         access_token = getattr(session, "access_token", None)
         refresh_token = getattr(session, "refresh_token", None)
@@ -201,5 +203,23 @@ def handle_successful_auth(session, username: str):
         if isinstance(user_obj, dict)
         else getattr(user_obj, "id", None)
     )
+
+    supabase_client = get_supabase_client()
+
+    perfil = (
+        supabase_client
+        .table("perfis")
+        .select("role, cliente_id")
+        .eq("id", st.session_state.user_id)
+        .single()
+        .execute()
+    )
+
+    if perfil.data:
+        st.session_state.role = perfil.data["role"]
+        st.session_state.cliente_id = perfil.data["cliente_id"]
+
+        # print("ROLE:", st.session_state.role)
+        # print("CLIENTE_ID:", st.session_state.cliente_id)
 
     st.rerun()

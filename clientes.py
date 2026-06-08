@@ -34,9 +34,8 @@ if st.session_state.aba == "Listar":
         st.rerun()
 
     clientes = listar_clientes(filtro_empresa=st.session_state.busca_empresa)
-    #clientes = listar_todos_dados_clientes
-    print(st.session_state.busca_empresa)
-    print(f"Clientes encontrados: {len(clientes)}")
+    #print(st.session_state.busca_empresa)
+    ##print(f"Clientes encontrados: {len(clientes)}")
 
     total = len(clientes)
     total = 10
