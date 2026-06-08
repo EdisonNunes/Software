@@ -110,13 +110,15 @@ def show_login_page():
         with st.form("login_form"):
             username = st.text_input(
                 "E-mail",
-                placeholder="usuario@empresa.com",
+                #placeholder="usuario@empresa.com",
+                value = 'fabio.barreto@gmail.com'
             )
 
             password = st.text_input(
                 "Senha",
                 type="password",
-                placeholder="Digite sua senha",
+                #placeholder="Digite sua senha",
+                value = 'fab1234'
             )
 
             submitted = st.form_submit_button("Entrar")

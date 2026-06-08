@@ -34,10 +34,12 @@ if st.session_state.aba == "Listar":
         st.rerun()
 
     clientes = listar_clientes(filtro_empresa=st.session_state.busca_empresa)
+    #clientes = listar_todos_dados_clientes
     print(st.session_state.busca_empresa)
     print(f"Clientes encontrados: {len(clientes)}")
 
     total = len(clientes)
+    total = 10
     inicio = st.session_state.pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
     st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
