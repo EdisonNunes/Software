@@ -17,9 +17,10 @@ pg = st.navigation(
                         ],
         'Cadastros':   [
                         st.Page('clientes.py',  title='Cadastro de Clientes', icon=':material/groups:'),
-                        st.Page('produtos.py',  title='Cadastro de Produtos', icon=':material/thermostat:'),
+                        st.Page('usuarios.py',  title='Cadastro de Usuários', icon=':material/groups:'),
                         ],
        'Configurações':   [
+                        st.Page('produtos.py',  title='Cadastro SKU', icon=':material/thermostat:'),
                         st.Page('layout.py',      title='Layout',   icon=':material/format_paint:'),
                         ],
     }

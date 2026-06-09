@@ -234,6 +234,13 @@ supabase = SupabaseProxy()
 #   constraint clientes_pkey primary key (id),
 #   constraint clientes_cnpj_key unique (cnpj)
 # ) TABLESPACE pg_default;
+
+# | Perfil      | Consultar          | Incluir | Alterar | Excluir |
+# | ----------- | ------------------ | ------- | ------- | ------- |
+# | admin       | Todos os clientes  | ✅       | ✅       | ✅       |
+# | supervisor  | Todos os clientes  | ✅       | ✅       | ✅       |
+# | gerente     | Apenas sua empresa | ❌       | ❌       | ❌       |
+# | funcionario | Apenas sua empresa | ❌       | ❌       | ❌       |
 # ####################################################
 
 def listar_clientes(filtro_empresa=""):
@@ -296,7 +303,7 @@ def listar_produtos(filtro_produto=""):
         query = query.filter("cliente_id", "eq", filtro_produto)
     query = query.order("descricao", desc=False)
     response = query.execute()
-    print("Resposta da consulta de produtos:", response.data)
+    # print("Resposta da consulta de produtos:", response.data)
     return response.data
 
 def listar_todos_dados_produtos():

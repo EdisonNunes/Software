@@ -122,24 +122,75 @@ if st.session_state.aba == "Listar":
             st.rerun()
 
 elif st.session_state.aba == "Incluir":
-    st.subheader("Incluir Novo Cliente")
-    with st.form("form_incluir"):
-        dados = {
-            "empresa": st.text_input("Empresa").strip(),  # retira espaçoes da string
-            "cnpj": st.text_input("CNPJ").strip(),
-            "cep": st.text_input("CEP").strip(),
-            "endereco": st.text_input("Endereço").strip(),
-            "cidade": st.text_input("Cidade").strip(),
-            "uf": st.text_input("UF").strip(),
-            "contato": st.text_input("Contato").strip(),
-            "telefone": st.text_input("Telefone").strip(),
-            "email": st.text_input("Email").strip(),
-        }
-        col1, col2 = st.columns(2)
+    st.subheader("🏢 Incluir Novo Cliente")
+    with st.form("form_incluir", clear_on_submit=False):
+        st.markdown("### Dados da Empresa")
+        col1, col2 = st.columns([3, 2])
+
         with col1:
-            submitted = st.form_submit_button("Incluir")
-        with col2:    
-            voltar_inc = st.form_submit_button("Voltar sem incluir")
+            empresa = st.text_input("Empresa *").strip()
+
+        with col2:
+            cnpj = st.text_input("CNPJ").strip()
+
+        st.markdown("### Endereço")
+
+        col1, col2, col3 = st.columns([2, 4, 1])
+
+        with col1:
+            cep = st.text_input("CEP").strip()
+
+        with col2:
+            endereco = st.text_input("Endereço").strip()
+
+        with col3:
+            uf = st.text_input("UF").strip()
+
+        col1, col2 = st.columns([3, 2])
+
+        with col1:
+            cidade = st.text_input("Cidade").strip()
+
+        st.markdown("### Contato")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            contato = st.text_input("Contato").strip()
+
+        with col2:
+            telefone = st.text_input("Telefone").strip()
+
+        email = st.text_input("Email").strip()
+
+        dados = {
+            "empresa": empresa,
+            "cnpj": cnpj,
+            "cep": cep,
+            "endereco": endereco,
+            "cidade": cidade,
+            "uf": uf,
+            "contato": contato,
+            "telefone": telefone,
+            "email": email,
+        }
+
+        st.divider()
+
+        col1, col2, col3 = st.columns([2, 1, 2])
+
+        with col1:
+            submitted = st.form_submit_button(
+                "💾 Incluir Cliente",
+                use_container_width=True
+            )
+
+        with col3:
+            voltar_inc = st.form_submit_button(
+                "↩️ Voltar",
+                use_container_width=True
+            )
+
         if submitted:
             try:
                 incluir_cliente(dados)
@@ -154,38 +205,115 @@ elif st.session_state.aba == "Incluir":
                 st.rerun()        
 
 elif st.session_state.aba == "Alterar":
-    st.subheader("Alterar Cliente")
+    st.subheader("✏️ Alterar Cliente")
     clientes = listar_todos_dados_clientes()
     cliente = st.session_state.cliente_selecionado or (clientes[0] if clientes else None)
 
     if cliente:
         with st.form("form_alterar"):
-            dados = {
-                "empresa": st.text_input("Empresa", value=cliente.get("empresa", "")),
-                "cnpj": st.text_input("CNPJ", value=cliente.get("cnpj", "")),
-                "cep": st.text_input("CEP", value=cliente.get("cep", "")),
-                "endereco": st.text_input("Endereço", value=cliente.get("endereco", "")),
-                "cidade": st.text_input("Cidade", value=cliente.get("cidade", "")),
-                "uf": st.text_input("UF", value=cliente.get("uf", "")),
-                "contato": st.text_input("Contato", value=cliente.get("contato", "")),
-                "telefone": st.text_input("Telefone", value=cliente.get("telefone", "")),
-                "email": st.text_input("Email", value=cliente.get("email", "")),
-            }
-            # print('id = ',cliente.get('id'),dados)
-            col1, col2 = st.columns(2)
+            st.markdown("### Dados da Empresa")
+            col1, col2 = st.columns([3, 2])
             with col1:
-                submitted_alter = st.form_submit_button("Salvar Alterações")
-            with col2:    
-                voltar_alter = st.form_submit_button("Voltar sem Alterar")
-          
+                empresa = st.text_input(
+                    "Empresa *",
+                    value=cliente.get("empresa", "")
+                )
+            with col2:
+                cnpj = st.text_input(
+                    "CNPJ",
+                    value=cliente.get("cnpj", "")
+                )
+            st.markdown("### Endereço")
+
+            col1, col2, col3 = st.columns([2, 4, 1])
+
+            with col1:
+                cep = st.text_input(
+                    "CEP",
+                    value=cliente.get("cep", "")
+                )
+
+            with col2:
+                endereco = st.text_input(
+                    "Endereço",
+                    value=cliente.get("endereco", "")
+                )
+
+            with col3:
+                uf = st.text_input(
+                    "UF",
+                    value=cliente.get("uf", "")
+                )
+
+            col1, col2 = st.columns([3, 2])
+
+            with col1:
+                cidade = st.text_input(
+                    "Cidade",
+                    value=cliente.get("cidade", "")
+                )
+
+            st.markdown("### Contato")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                contato = st.text_input(
+                    "Contato",
+                    value=cliente.get("contato", "")
+                )
+
+            with col2:
+                telefone = st.text_input(
+                    "Telefone",
+                    value=cliente.get("telefone", "")
+                )
+
+            email = st.text_input(
+                "Email",
+                value=cliente.get("email", "")
+            )
+
+            dados = {
+                "empresa": empresa,
+                "cnpj": cnpj,
+                "cep": cep,
+                "endereco": endereco,
+                "cidade": cidade,
+                "uf": uf,
+                "contato": contato,
+                "telefone": telefone,
+                "email": email,
+            }
+
+            st.divider()
+
+            col1, col2, col3 = st.columns([2, 1, 2])
+
+            with col1:
+                submitted_alter = st.form_submit_button(
+                    "💾 Salvar Alterações",
+                    use_container_width=True
+                )
+
+            with col3:
+                voltar_alter = st.form_submit_button(
+                    "↩️ Voltar",
+                    use_container_width=True
+                )
+
             if submitted_alter:
                 try:
+                    print(f"Alterando cliente ID {cliente['id']} com dados: {dados}")
                     alterar_cliente(cliente["id"], dados)
                     st.success("Cliente alterado com sucesso!")
+                    st.session_state.aba = "Listar"
+                    st.rerun()
+
                 except ValueError as e:
+
                     st.error(str(e))
-                st.session_state.aba = "Listar"   
-                st.rerun() 
+
             if voltar_alter:
                 st.session_state.aba = "Listar"
                 st.rerun()        

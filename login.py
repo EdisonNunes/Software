@@ -149,7 +149,7 @@ def authenticate_user(username: str, password: str):
 
         error = getattr(response, "error", None)
 
-        print("Resposta da autenticação:", response)
+        # print("Resposta da autenticação:", response)
         # print("Erro da autenticação:", error)
         
         if isinstance(response, dict) and error is None:
