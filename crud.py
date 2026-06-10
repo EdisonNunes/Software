@@ -8,6 +8,7 @@ DEPRECATED: Use services/clientes.py e services/servicos.py
 """
 
 import logging
+from urllib import response
 import warnings
 import streamlit as st
 from typing import List, Dict, Any, Optional
@@ -216,6 +217,17 @@ class SupabaseProxy:
 # Instância global para compatibilidade
 supabase = SupabaseProxy()
 
+# =====================================================
+# SUPABASE ADMIN
+# =====================================================
+
+def get_supabase_admin():
+    config = settings.get_supabase_config()
+
+    return create_client(
+        config["url"],
+        config["service_role_key"]  # SUPABASE_SERVICE_ROLE_KEY
+    )
 # ####################################################
 # CLIENTES  - TABELA CLIENTES
 # create table public.clientes (
@@ -343,4 +355,361 @@ def ComboBoxClientes():
         opcoes_combobox = []
     return opcoes_combobox 
 
-  
+ # ####################################################
+# USUÁRIOS
+# auth.users + public.perfis
+# ####################################################
+
+# def listar_usuarios(cliente_id):
+
+#     try:
+#         response = (
+#             supabase
+#             .table("perfis")
+#             .select("""
+#                 id,
+#                 role,
+#                 cliente_id    
+#             """)
+#             .eq("cliente_id", cliente_id)
+#             .execute()
+#         )
+#         #print("PERFIS ENCONTRADOS:")
+#         #print(response.data)
+#         usuarios = []
+
+#         admin = get_supabase_admin()
+
+#         for perfil in response.data:
+
+#             try:
+#                 user = admin.auth.admin.get_user_by_id(
+#                     perfil["id"]
+#                 )
+
+#                 usuarios.append({
+#                     "id": perfil["id"],
+#                     "cliente_id": perfil["cliente_id"],
+#                     "nome": (
+#                         user.user.user_metadata.get("display_name", "")
+#                         if user.user.user_metadata
+#                         else ""
+#                     ),
+#                     "email": user.user.email,
+#                     "tipo": perfil["role"]
+#                 })
+
+#             except Exception:
+#                 pass
+
+#         #print("PERFIS ENCONTRADOS:")
+#         #print(response.data)        
+#         return usuarios
+
+#     except Exception as e:
+#         # print(f"ERRO:{e}")
+#         logger.error(f"Erro ao listar usuários: {e}")
+#         return []
+def listar_usuarios(cliente_id):
+
+    try:
+
+        admin = get_supabase_admin()
+
+        response = (
+            admin
+            .table("perfis")
+            .select("""
+                id,
+                role,
+                cliente_id
+            """)
+            .eq("cliente_id", cliente_id)
+            .order("role")
+            .execute()
+        )
+
+        usuarios = []
+
+        for perfil in response.data:
+
+            try:
+
+                user = admin.auth.admin.get_user_by_id(
+                    perfil["id"]
+                )
+
+                usuarios.append({
+                    "id": perfil["id"],
+                    "cliente_id": perfil["cliente_id"],
+                    "nome": (
+                        user.user.user_metadata.get(
+                            "display_name",
+                            ""
+                        )
+                        if user.user.user_metadata
+                        else ""
+                    ),
+                    "email": user.user.email,
+                    "tipo": perfil["role"]
+                })
+
+            except Exception as e:
+                logger.error(
+                    f"Erro ao obter usuário "
+                    f"{perfil['id']}: {e}"
+                )
+
+        return usuarios
+
+    except Exception as e:
+        logger.error(
+            f"Erro ao listar usuários: {e}"
+        )
+        return []
+
+# def incluir_usuario(
+#     nome,
+#     email,
+#     senha,
+#     tipo,
+#     cliente_id
+# ):
+#     admin = get_supabase_admin()
+
+#     if tipo not in ["gerente", "funcionario"]:
+#         raise ValueError(
+#             "Tipo de usuário inválido."
+#     )
+
+#     usuario = admin.auth.admin.create_user(
+#         {
+#             "email": email,
+#             "password": senha,
+#             "email_confirm": True,
+#             "user_metadata": {
+#                 "display_name": nome,
+#                 "role": tipo.lower(),
+#                 "cliente_id": str(cliente_id)
+#             }
+#         }
+#     )
+
+
+#     return True
+def incluir_usuario(
+    nome,
+    email,
+    senha,
+    tipo,
+    cliente_id
+):
+
+    admin = get_supabase_admin()
+
+    if tipo not in [
+        "gerente",
+        "funcionario"
+    ]:
+        raise ValueError(
+            "Tipo de usuário inválido."
+        )
+
+    usuario = admin.auth.admin.create_user(
+        {
+            "email": email,
+            "password": senha,
+            "email_confirm": True,
+            "user_metadata": {
+                "display_name": nome
+            }
+        }
+    )
+
+    user_id = usuario.user.id
+
+    resultado = (
+        admin
+        .table("perfis")
+        .update(
+            {
+                "role": tipo,
+                "cliente_id": cliente_id
+            }
+        )
+        .eq("id", user_id)
+        .execute()
+    )
+
+    if not resultado.data:
+        raise Exception(
+            "Perfil não encontrado "
+            "após criação do usuário."
+        )
+
+    return True
+
+# def alterar_usuario(
+#     user_id,
+#     nome,
+#     tipo
+# ):
+
+#     admin = get_supabase_admin()
+
+#     if tipo not in ["gerente", "funcionario"]:
+#         raise ValueError(
+#             "Tipo de usuário inválido."
+#     )
+#     admin.auth.admin.update_user_by_id(
+#         user_id,
+#         {
+#             "user_metadata": {
+#                 "display_name": nome
+#             }
+#         }
+#     )
+
+#     # supabase.table("perfis") \
+#     #     .update(
+#     #         {
+#     #             "role": tipo.lower()
+#     #         }
+#     #     ) \
+#     #     .eq("id", user_id) \
+#     #     .execute()
+#     resposta = (
+#     supabase
+#     .table("perfis")
+#     .select("*")
+#     .eq("id", user_id)
+#     .execute()
+# )
+
+#     print("ANTES DO UPDATE:")
+#     print(resposta.data)
+
+#     return True    
+
+# def alterar_usuario(
+#     user_id,
+#     nome,
+#     tipo
+# ):
+
+#     admin = get_supabase_admin()
+
+#     print("ALTERANDO USUÁRIO")
+#     print("USER_ID:", user_id)
+#     print("TIPO:", tipo)
+
+#     admin.auth.admin.update_user_by_id(
+#         user_id,
+#         {
+#             "user_metadata": {
+#                 "display_name": nome
+#             }
+#         }
+#     )
+
+#     print("ALTERANDO PERFIL")
+
+#     resultado = (
+#         supabase
+#         .table("perfis")
+#         .update(
+#             {
+#                 "role": tipo.lower()
+#             }
+#         )
+#         .eq("id", user_id)
+#         .execute()
+#     )
+
+#     print("RETORNO UPDATE:")
+#     print(resultado)
+
+#     depois = (
+#         supabase
+#         .table("perfis")
+#         .select("*")
+#         .eq("id", user_id)
+#         .execute()
+#     )
+
+#     print("DEPOIS DO UPDATE:")
+#     print(depois.data)
+
+#     return True
+
+def alterar_usuario(
+    user_id,
+    nome,
+    tipo
+):
+
+    admin = get_supabase_admin()
+
+    if tipo not in [
+        "gerente",
+        "funcionario"
+    ]:
+        raise ValueError(
+            "Tipo de usuário inválido."
+        )
+
+    admin.auth.admin.update_user_by_id(
+        user_id,
+        {
+            "user_metadata": {
+                "display_name": nome
+            }
+        }
+    )
+
+    resultado = (
+        admin
+        .table("perfis")
+        .update(
+            {
+                "role": tipo
+            }
+        )
+        .eq("id", user_id)
+        .execute()
+    )
+
+    if not resultado.data:
+        raise Exception(
+            "Usuário não encontrado."
+        )
+
+    return True
+
+# def excluir_usuario(user_id):
+
+#     admin = get_supabase_admin()
+
+#     admin.auth.admin.delete_user(user_id)
+
+#     return True
+
+def excluir_usuario(user_id):
+
+    admin = get_supabase_admin()
+
+    try:
+
+        admin.auth.admin.delete_user(
+            user_id
+        )
+
+        return True
+
+    except Exception as e:
+
+        logger.error(
+            f"Erro ao excluir usuário: {e}"
+        )
+
+        return False

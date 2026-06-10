@@ -74,22 +74,465 @@
 #     (reauthentication_token)::text !~ '^[0-9 ]*$'::text
 #   );
 
-create unique INDEX IF not exists users_email_partial_key on auth.users using btree (email) TABLESPACE pg_default
-where
-  (is_sso_user = false);
+# create unique INDEX IF not exists users_email_partial_key on auth.users using btree (email) TABLESPACE pg_default
+# where
+#   (is_sso_user = false);
 
-create index IF not exists users_is_anonymous_idx on auth.users using btree (is_anonymous) TABLESPACE pg_default;
+# create index IF not exists users_is_anonymous_idx on auth.users using btree (is_anonymous) TABLESPACE pg_default;
 
-create index IF not exists idx_users_email on auth.users using btree (email) TABLESPACE pg_default;
+# create index IF not exists idx_users_email on auth.users using btree (email) TABLESPACE pg_default;
 
-create index IF not exists idx_users_created_at_desc on auth.users using btree (created_at desc) TABLESPACE pg_default;
+# create index IF not exists idx_users_created_at_desc on auth.users using btree (created_at desc) TABLESPACE pg_default;
 
-create index IF not exists idx_users_last_sign_in_at_desc on auth.users using btree (last_sign_in_at desc) TABLESPACE pg_default;
+# create index IF not exists idx_users_last_sign_in_at_desc on auth.users using btree (last_sign_in_at desc) TABLESPACE pg_default;
 
-create index IF not exists idx_users_name on auth.users using btree (((raw_user_meta_data ->> 'name'::text))) TABLESPACE pg_default
-where
-  ((raw_user_meta_data ->> 'name'::text) is not null);
+# create index IF not exists idx_users_name on auth.users using btree (((raw_user_meta_data ->> 'name'::text))) TABLESPACE pg_default
+# where
+#   ((raw_user_meta_data ->> 'name'::text) is not null);
 
-create trigger on_auth_user_created_perfis
-after INSERT on auth.users for EACH row
-execute FUNCTION handle_new_auth_user_for_perfis ();
+# create trigger on_auth_user_created_perfis
+# after INSERT on auth.users for EACH row
+# execute FUNCTION handle_new_auth_user_for_perfis ();
+# -------------------------------------------------------------------------------
+# Ao executar : incluir_usuario()
+# Passo 1 - admin.auth.admin.create_user(...) cria o usuário em auth.users
+# Passo 2 - trigger on_auth_user_created_perfis é acionada e chama handle_new_auth_user_for_perfis()
+# Passo 3 - handle_new_auth_user_for_perfis() insere o perfil padrão "funcionario" na tabela "perfis" associada ao novo usuário
+
+import streamlit as st
+import pandas as pd
+
+from crud import *
+
+# =====================================================
+# SESSION STATE
+# =====================================================
+
+if "aba" not in st.session_state:
+    st.session_state.aba = "Listar"
+
+if "pagina" not in st.session_state:
+    st.session_state.pagina = 0
+
+if "cliente_pagina" not in st.session_state:
+    st.session_state.cliente_pagina = 0
+
+if "cliente_selecionado" not in st.session_state:
+    st.session_state.cliente_selecionado = None
+
+if "usuario_selecionado" not in st.session_state:
+    st.session_state.usuario_selecionado = None
+
+PAGE_SIZE = 10
+
+# =====================================================
+# SELEÇÃO DA EMPRESA
+# =====================================================
+
+if st.session_state.cliente_selecionado is None:
+
+    st.subheader("Selecione a Empresa")
+
+    clientes = listar_clientes()
+
+    total = len(clientes)
+
+    inicio = st.session_state.cliente_pagina * PAGE_SIZE
+    fim = inicio + PAGE_SIZE
+
+    st.write(
+        f"Mostrando {inicio + 1} - "
+        f"{min(fim, total)} "
+        f"de {total} registros"
+    )
+
+    if clientes:
+
+        clientes_paginados = clientes[inicio:fim]
+
+        df_clientes = pd.DataFrame(
+            clientes_paginados
+        ).copy()
+
+        df_clientes["Selecionar"] = False
+
+        cols_clientes = [
+            "Selecionar",
+            "empresa",
+            "cidade",
+            "telefone",
+            "contato"
+        ]
+
+        selecao_cli = st.data_editor(
+            df_clientes[cols_clientes].reset_index(drop=True),
+            hide_index=True,
+            column_config={
+                "Selecionar": st.column_config.CheckboxColumn(
+                    "Selecionar"
+                )
+            },
+            key="grid_clientes_usuarios"
+        )
+
+        selecionados = selecao_cli[
+            selecao_cli["Selecionar"] == True
+        ]
+
+        if len(selecionados) == 1:
+
+            idx = selecionados.index[0]
+
+            if idx < len(clientes_paginados):
+
+                cliente = clientes_paginados[idx]
+
+                st.session_state.cliente_selecionado = cliente
+
+                st.rerun()
+
+        elif len(selecionados) > 1:
+
+            st.error(
+                "Selecione apenas uma empresa."
+            )
+
+    col1, col2, col3 = st.columns([1,2,1])
+
+    total_paginas = max(
+        1,
+        (total + PAGE_SIZE - 1) // PAGE_SIZE
+    )
+
+    if col1.button(
+        "⬅️",
+        disabled=(
+            st.session_state.cliente_pagina <= 0
+        )
+    ):
+        st.session_state.cliente_pagina -= 1
+        st.rerun()
+
+    col2.write(
+        f"Página "
+        f"{st.session_state.cliente_pagina + 1} "
+        f"de "
+        f"{total_paginas}"
+    )
+
+    if col3.button(
+        "➡️",
+        disabled=(
+            st.session_state.cliente_pagina + 1
+            >= total_paginas
+        )
+    ):
+        st.session_state.cliente_pagina += 1
+        st.rerun()
+
+    st.stop()
+
+# =====================================================
+# EMPRESA SELECIONADA
+# =====================================================
+
+cliente = st.session_state.cliente_selecionado
+
+st.success(
+    f"Empresa Selecionada: "
+    f"{cliente['empresa']}"
+)
+
+if st.button("Trocar Empresa"):
+    st.session_state.cliente_selecionado = None
+    st.session_state.usuario_selecionado = None
+    st.rerun()
+
+# =====================================================
+# LISTAR
+# =====================================================
+
+if st.session_state.aba == "Listar":
+
+    usuarios = listar_usuarios(
+        cliente["id"]
+    )
+
+    total = len(usuarios)
+
+    inicio = st.session_state.pagina * PAGE_SIZE
+    fim = inicio + PAGE_SIZE
+
+    st.write(
+        f"Mostrando "
+        f"{inicio + 1} - "
+        f"{min(fim,total)} "
+        f"de {total}"
+    )
+
+    if usuarios:
+
+        usuarios_paginados = usuarios[inicio:fim]
+
+        df = pd.DataFrame(
+            usuarios_paginados
+        ).copy()
+
+        df["Selecionar"] = False
+
+        selecao = st.data_editor(
+            df[
+                [
+                    "Selecionar",
+                    "nome",
+                    "email",
+                    "tipo"
+                ]
+            ],
+            hide_index=True,
+            key="grid_usuarios"
+        )
+
+        selecionados = selecao[
+            selecao["Selecionar"] == True
+        ]
+
+        if len(selecionados) == 1:
+
+            idx = selecionados.index[0]
+
+            st.session_state.usuario_selecionado = (
+                usuarios_paginados[idx]
+            )
+
+        elif len(selecionados) > 1:
+
+            st.error(
+                "Selecione apenas um usuário."
+            )
+
+    col1, col2, col3 = st.columns([1,2,1])
+
+    total_paginas = max(
+        1,
+        (total + PAGE_SIZE - 1) // PAGE_SIZE
+    )
+
+    if col1.button(
+        "⬅️",
+        disabled=st.session_state.pagina <= 0
+    ):
+        st.session_state.pagina -= 1
+        st.rerun()
+
+    col2.write(
+        f"Página "
+        f"{st.session_state.pagina + 1} "
+        f"de "
+        f"{total_paginas}"
+    )
+
+    if col3.button(
+        "➡️",
+        disabled=(
+            st.session_state.pagina + 1
+            >= total_paginas
+        )
+    ):
+        st.session_state.pagina += 1
+        st.rerun()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    if col1.button("Listar"):
+        pass
+
+    if col2.button("Incluir"):
+        st.session_state.aba = "Incluir"
+        st.rerun()
+
+    if col3.button("Alterar"):
+        st.session_state.aba = "Alterar"
+        st.rerun()
+
+    if col4.button("Excluir"):
+        st.session_state.aba = "Excluir"
+        st.rerun()
+
+# =====================================================
+# INCLUIR
+# =====================================================
+
+elif st.session_state.aba == "Incluir":
+
+    st.subheader("Incluir Usuário")
+
+    with st.form("form_incluir_usuario"):
+
+        nome = st.text_input("Nome")
+
+        email = st.text_input("Email")
+
+        senha = st.text_input(
+            "Senha",
+            type="password"
+        )
+
+        tipo = st.selectbox(
+            "Tipo",
+            [
+                "gerente",
+                "funcionario"
+            ]
+        )
+
+        st.info(
+            f"Empresa: "
+            f"{cliente['empresa']}"
+        )
+
+        col1, col2 = st.columns(2)
+
+        salvar = col1.form_submit_button(
+            "Incluir Usuário"
+        )
+
+        voltar = col2.form_submit_button(
+            "Voltar"
+        )
+
+        if salvar:
+
+            incluir_usuario(
+                nome,
+                email,
+                senha,
+                tipo,
+                cliente["id"]
+            )
+
+            st.success(
+                "Usuário incluído."
+            )
+
+            st.session_state.aba = "Listar"
+
+            st.rerun()
+
+        if voltar:
+
+            st.session_state.aba = "Listar"
+
+            st.rerun()
+
+# =====================================================
+# ALTERAR
+# =====================================================
+
+elif st.session_state.aba == "Alterar":
+
+    usuario = st.session_state.usuario_selecionado
+
+    if usuario is None:
+
+        st.warning(
+            "Selecione um usuário."
+        )
+
+    else:
+
+        with st.form("form_alterar_usuario"):
+
+            nome = st.text_input(
+                "Nome",
+                value=usuario["nome"]
+            )
+
+            tipo = st.selectbox(
+                "Tipo",
+                [
+                    "gerente",
+                    "funcionario"
+                ],
+                index=0 if usuario["tipo"] == "gerente" else 1
+            )
+
+            col1, col2 = st.columns(2)
+
+            salvar = col1.form_submit_button(
+                "Salvar"
+            )
+
+            voltar = col2.form_submit_button(
+                "Voltar"
+            )
+
+            if salvar:
+
+                alterar_usuario(
+                    usuario["id"],
+                    nome,
+                    tipo
+                )
+
+                st.success(
+                    "Usuário alterado."
+                )
+
+                st.session_state.aba = "Listar"
+
+                st.rerun()
+
+            if voltar:
+
+                st.session_state.aba = "Listar"
+
+                st.rerun()
+
+# =====================================================
+# EXCLUIR
+# =====================================================
+
+elif st.session_state.aba == "Excluir":
+
+    usuario = st.session_state.usuario_selecionado
+
+    if usuario is None:
+
+        st.warning(
+            "Selecione um usuário."
+        )
+
+    else:
+
+        st.warning(
+            f"Deseja excluir "
+            f"{usuario['nome']} ?"
+        )
+
+        col1, col2 = st.columns(2)
+
+        if col1.button(
+            "Excluir Usuário"
+        ):
+
+            excluir_usuario(
+                usuario["id"]
+            )
+
+            st.success(
+                "Usuário excluído."
+            )
+
+            st.session_state.usuario_selecionado = None
+            st.session_state.aba = "Listar"
+
+            st.rerun()
+
+        if col2.button(
+            "Voltar"
+        ):
+
+            st.session_state.aba = "Listar"
+
+            st.rerun()

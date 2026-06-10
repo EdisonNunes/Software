@@ -40,9 +40,15 @@ class Settings:
                     "Secrets não configurados. Verifique .streamlit/secrets.toml"
                 )
             
+            #print("SECRETS SUPABASE:")
+            #print(st.secrets["supabase"].keys())
+            #print(dict(st.secrets["supabase"]))
+
+
             return {
                 "url": st.secrets["supabase"]["SUPABASE_URL"],
-                "key": st.secrets["supabase"]["SUPABASE_KEY"]
+                "key": st.secrets["supabase"]["SUPABASE_KEY"],
+                "service_role_key": st.secrets["supabase"]["SUPABASE_SERVICE_ROLE_KEY"],
             }
         except KeyError as e:
             raise ValueError(f"Secret faltando: {e}")
