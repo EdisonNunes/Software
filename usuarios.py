@@ -378,13 +378,22 @@ elif st.session_state.aba == "Incluir":
             type="password"
         )
 
-        tipo = st.selectbox(
+        # tipo = st.selectbox(
+        #     "Tipo",
+        #     [
+        #         "gerente",
+        #         "funcionario"
+        #     ]
+        # )
+        tipo_exibicao = st.selectbox(
             "Tipo",
             [
-                "gerente",
-                "funcionario"
+                "Gerente",
+                "Funcionário"
             ]
         )
+
+        tipo = PERFIS_VALOR[tipo_exibicao]
 
         st.info(
             f"Empresa: "
@@ -448,14 +457,31 @@ elif st.session_state.aba == "Alterar":
                 value=usuario["nome"]
             )
 
-            tipo = st.selectbox(
-                "Tipo",
-                [
-                    "gerente",
-                    "funcionario"
-                ],
-                index=0 if usuario["tipo"] == "gerente" else 1
+            # tipo = st.selectbox(
+            #     "Tipo",
+            #     [
+            #         "gerente",
+            #         "funcionario"
+            #     ],
+            #     index=0 if usuario["tipo"] == "gerente" else 1
+            # )
+            tipos_exibicao = [
+                    "Gerente",
+                    "Funcionário"
+                ]
+
+            tipo_atual = PERFIS_LABEL.get(
+                usuario["tipo"],
+                "Gerente"
             )
+
+            tipo_exibicao = st.selectbox(
+                "Tipo",
+                tipos_exibicao,
+                index=tipos_exibicao.index(tipo_atual)
+            )
+
+            tipo = PERFIS_VALOR[tipo_exibicao]
 
             col1, col2 = st.columns(2)
 

@@ -16,18 +16,32 @@ from supabase import create_client
 from config.settings import settings
 from services import ClienteService, ServicoService
 
-# Avisar sobre depreciação
-warnings.warn(
-    "crud.py está deprecated. Use services/clientes.py e services/servicos.py",
-    DeprecationWarning,
-    stacklevel=2
-)
+# # Avisar sobre depreciação
+# warnings.warn(
+#     "crud.py está deprecated. Use services/clientes.py e services/servicos.py",
+#     DeprecationWarning,
+#     stacklevel=2
+# )
 
 logger = logging.getLogger(__name__)
 
 # Instâncias dos serviços
 _cliente_service = None
 _servico_service = None
+
+PERFIS_LABEL = {
+    "admin": "Admin",
+    "supervisor": "Supervisor",
+    "gerente": "Gerente",
+    "funcionario": "Funcionário"
+}
+
+PERFIS_VALOR = {
+    "Admin": "admin",
+    "Supervisor": "supervisor",
+    "Gerente": "gerente",
+    "Funcionário": "funcionario"
+}
 
 def _get_cliente_service() -> ClienteService:
     """Obtém instância do ClienteService."""
@@ -355,61 +369,11 @@ def ComboBoxClientes():
         opcoes_combobox = []
     return opcoes_combobox 
 
- # ####################################################
+# ####################################################
 # USUÁRIOS
 # auth.users + public.perfis
 # ####################################################
 
-# def listar_usuarios(cliente_id):
-
-#     try:
-#         response = (
-#             supabase
-#             .table("perfis")
-#             .select("""
-#                 id,
-#                 role,
-#                 cliente_id    
-#             """)
-#             .eq("cliente_id", cliente_id)
-#             .execute()
-#         )
-#         #print("PERFIS ENCONTRADOS:")
-#         #print(response.data)
-#         usuarios = []
-
-#         admin = get_supabase_admin()
-
-#         for perfil in response.data:
-
-#             try:
-#                 user = admin.auth.admin.get_user_by_id(
-#                     perfil["id"]
-#                 )
-
-#                 usuarios.append({
-#                     "id": perfil["id"],
-#                     "cliente_id": perfil["cliente_id"],
-#                     "nome": (
-#                         user.user.user_metadata.get("display_name", "")
-#                         if user.user.user_metadata
-#                         else ""
-#                     ),
-#                     "email": user.user.email,
-#                     "tipo": perfil["role"]
-#                 })
-
-#             except Exception:
-#                 pass
-
-#         #print("PERFIS ENCONTRADOS:")
-#         #print(response.data)        
-#         return usuarios
-
-#     except Exception as e:
-#         # print(f"ERRO:{e}")
-#         logger.error(f"Erro ao listar usuários: {e}")
-#         return []
 def listar_usuarios(cliente_id):
 
     try:
@@ -439,6 +403,20 @@ def listar_usuarios(cliente_id):
                     perfil["id"]
                 )
 
+                # usuarios.append({
+                #     "id": perfil["id"],
+                #     "cliente_id": perfil["cliente_id"],
+                #     "nome": (
+                #         user.user.user_metadata.get(
+                #             "display_name",
+                #             ""
+                #         )
+                #         if user.user.user_metadata
+                #         else ""
+                #     ),
+                #     "email": user.user.email,
+                #     "tipo": perfil["role"]
+                # })
                 usuarios.append({
                     "id": perfil["id"],
                     "cliente_id": perfil["cliente_id"],
@@ -451,7 +429,10 @@ def listar_usuarios(cliente_id):
                         else ""
                     ),
                     "email": user.user.email,
-                    "tipo": perfil["role"]
+                    "tipo": PERFIS_LABEL.get(
+                        perfil["role"],
+                        perfil["role"]
+                    )
                 })
 
             except Exception as e:
@@ -468,35 +449,6 @@ def listar_usuarios(cliente_id):
         )
         return []
 
-# def incluir_usuario(
-#     nome,
-#     email,
-#     senha,
-#     tipo,
-#     cliente_id
-# ):
-#     admin = get_supabase_admin()
-
-#     if tipo not in ["gerente", "funcionario"]:
-#         raise ValueError(
-#             "Tipo de usuário inválido."
-#     )
-
-#     usuario = admin.auth.admin.create_user(
-#         {
-#             "email": email,
-#             "password": senha,
-#             "email_confirm": True,
-#             "user_metadata": {
-#                 "display_name": nome,
-#                 "role": tipo.lower(),
-#                 "cliente_id": str(cliente_id)
-#             }
-#         }
-#     )
-
-
-#     return True
 def incluir_usuario(
     nome,
     email,
@@ -549,98 +501,6 @@ def incluir_usuario(
 
     return True
 
-# def alterar_usuario(
-#     user_id,
-#     nome,
-#     tipo
-# ):
-
-#     admin = get_supabase_admin()
-
-#     if tipo not in ["gerente", "funcionario"]:
-#         raise ValueError(
-#             "Tipo de usuário inválido."
-#     )
-#     admin.auth.admin.update_user_by_id(
-#         user_id,
-#         {
-#             "user_metadata": {
-#                 "display_name": nome
-#             }
-#         }
-#     )
-
-#     # supabase.table("perfis") \
-#     #     .update(
-#     #         {
-#     #             "role": tipo.lower()
-#     #         }
-#     #     ) \
-#     #     .eq("id", user_id) \
-#     #     .execute()
-#     resposta = (
-#     supabase
-#     .table("perfis")
-#     .select("*")
-#     .eq("id", user_id)
-#     .execute()
-# )
-
-#     print("ANTES DO UPDATE:")
-#     print(resposta.data)
-
-#     return True    
-
-# def alterar_usuario(
-#     user_id,
-#     nome,
-#     tipo
-# ):
-
-#     admin = get_supabase_admin()
-
-#     print("ALTERANDO USUÁRIO")
-#     print("USER_ID:", user_id)
-#     print("TIPO:", tipo)
-
-#     admin.auth.admin.update_user_by_id(
-#         user_id,
-#         {
-#             "user_metadata": {
-#                 "display_name": nome
-#             }
-#         }
-#     )
-
-#     print("ALTERANDO PERFIL")
-
-#     resultado = (
-#         supabase
-#         .table("perfis")
-#         .update(
-#             {
-#                 "role": tipo.lower()
-#             }
-#         )
-#         .eq("id", user_id)
-#         .execute()
-#     )
-
-#     print("RETORNO UPDATE:")
-#     print(resultado)
-
-#     depois = (
-#         supabase
-#         .table("perfis")
-#         .select("*")
-#         .eq("id", user_id)
-#         .execute()
-#     )
-
-#     print("DEPOIS DO UPDATE:")
-#     print(depois.data)
-
-#     return True
 
 def alterar_usuario(
     user_id,
@@ -686,14 +546,6 @@ def alterar_usuario(
 
     return True
 
-# def excluir_usuario(user_id):
-
-#     admin = get_supabase_admin()
-
-#     admin.auth.admin.delete_user(user_id)
-
-#     return True
-
 def excluir_usuario(user_id):
 
     admin = get_supabase_admin()
@@ -713,3 +565,124 @@ def excluir_usuario(user_id):
         )
 
         return False
+# ============================================================================================
+#  create table public.areas (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   cliente_id uuid not null,
+#   codigo text not null,
+#   descricao text not null,
+#   constraint areas_pkey primary key (id),
+#   constraint areas_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
+# ) TABLESPACE pg_default;
+# create index IF not exists idx_areas_cliente_id on public.areas using btree (cliente_id) TABLESPACE pg_default;
+# create index IF not exists idx_areas_codigo on public.areas using btree (codigo) TABLESPACE pg_default;
+# create index IF not exists idx_areas_descricao on public.areas using btree (descricao) TABLESPACE pg_default;
+
+def listar_areas(cliente_id=""):
+    query = (
+        supabase
+        .table("areas")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_areas(cliente_id=""):
+    query = (
+        supabase
+        .table("areas")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_area(
+    codigo,
+    descricao,
+    cliente_id
+):
+    response = (
+        supabase
+        .table("areas")
+        .insert(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "cliente_id": cliente_id
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+def alterar_area(
+    area_id,
+    codigo,
+    descricao
+):
+    response = (
+        supabase
+        .table("areas")
+        .update(
+            {
+                "codigo": codigo,
+                "descricao": descricao
+            }
+        )
+        .eq("id", area_id)
+        .execute()
+    )
+
+    return response.data
+
+def excluir_area(area_id):
+    response = (
+        supabase
+        .table("areas")
+        .delete()
+        .eq("id", area_id)
+        .execute()
+    )
+
+    return response.data
+
+def verificar_uso_area(area_id):
+    try:
+
+        response = (
+            supabase
+            .table("produtos")
+            .select("id")
+            .eq("area_id", area_id)
+            .limit(1)
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception:
+        return False
+    
