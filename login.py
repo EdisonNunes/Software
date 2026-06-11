@@ -189,13 +189,46 @@ def handle_successful_auth(session, username: str):
         refresh_token = getattr(session, "refresh_token", None)
         user_obj = getattr(session, "user", None)
 
+    if isinstance(user_obj, dict):
+        display_name = (
+            user_obj.get("user_metadata", {})
+            .get("display_name")
+        )
+    else:
+        display_name = (
+            getattr(user_obj, "user_metadata", {})
+            .get("display_name")
+            if getattr(user_obj, "user_metadata", None)
+            else None
+        )
+
+
+
     if access_token and refresh_token:
         supabase_client = get_supabase_client()
         supabase_client.auth.set_session(access_token, refresh_token)
 
     st.session_state.authenticated = True
     st.session_state.user = username
-    st.session_state.user_name = username
+
+    if isinstance(user_obj, dict):
+        display_name = (
+            user_obj.get("user_metadata", {})
+            .get("display_name")
+        )
+    else:
+        display_name = (
+            getattr(user_obj, "user_metadata", {})
+            .get("display_name")
+            if getattr(user_obj, "user_metadata", None)
+            else None
+        )
+
+    st.session_state.user_name = (
+        display_name
+        if display_name
+        else username
+    )
     st.session_state.supabase_access_token = access_token
     st.session_state.supabase_refresh_token = refresh_token
     st.session_state.user_id = (

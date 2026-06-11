@@ -17,7 +17,7 @@ pg = st.navigation(
                         ],
      'Cadastros Gerais': [
                         st.Page('areas.py',   title='Áreas de Produção',  icon=':material/groups:'),
-                        st.Page('linhas.py',  title='Linhas de Produção', icon=':material/groups:'),
+                        st.Page('equipamentos.py',  title='Equipamentos', icon=':material/groups:'),
                         ],                
         'Supervisor':   [
                         st.Page('clientes.py',  title='Cadastro de Clientes', icon=':material/groups:'),

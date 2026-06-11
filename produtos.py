@@ -8,35 +8,35 @@ import streamlit.components.v1 as components
 from crud import *
 st.info(f'### Produtos Cadastrados',icon=':material/thermostat:')
 
-if "aba" not in st.session_state:
-    st.session_state.aba = "Listar"
-if "pagina" not in st.session_state:
-    st.session_state.pagina = 0
-if "busca_descricao" not in st.session_state:
-    st.session_state.busca_descricao = ""
-if "produto_selecionado" not in st.session_state:
-    st.session_state.produto_selecionado = None
-if "cliente_selecionado" not in st.session_state:
-    st.session_state.cliente_selecionado = None
-if "cliente_pagina" not in st.session_state:
-    st.session_state.cliente_pagina = 0
+if "sku_aba" not in st.session_state:
+    st.session_state.sku_aba = "Listar"
+if "sku_pagina" not in st.session_state:
+    st.session_state.sku_pagina = 0
+if "sku_busca_descricao" not in st.session_state:
+    st.session_state.sku_busca_descricao = ""
+if "sku_selecionado" not in st.session_state:
+    st.session_state.sku_selecionado = None
+if "sku_cliente_selecionado" not in st.session_state:
+    st.session_state.sku_cliente_selecionado = None
+if "sku_cliente_pagina" not in st.session_state:
+    st.session_state.sku_cliente_pagina = 0
 
 
 PAGE_SIZE = 10
 
-if st.session_state.aba == "Listar":
+if st.session_state.sku_aba == "Listar":
     # Se nenhum cliente selecionado, primeiro mostrar grid de clientes
-    busca_atual = st.text_input("Buscar cliente", st.session_state.busca_descricao)
-    if busca_atual != st.session_state.busca_descricao:
-        st.session_state.busca_descricao = busca_atual
-        st.session_state.cliente_pagina = 0
-        st.session_state.pagina = 0
+    busca_atual = st.text_input("Buscar cliente", st.session_state.sku_busca_descricao)
+    if busca_atual != st.session_state.sku_busca_descricao:
+        st.session_state.sku_busca_descricao = busca_atual
+        st.session_state.sku_cliente_pagina = 0
+        st.session_state.sku_pagina = 0
         st.rerun()
 
-    if st.session_state.cliente_selecionado is None:
-        clientes = listar_clientes(filtro_empresa=st.session_state.busca_descricao)
+    if st.session_state.sku_cliente_selecionado is None:
+        clientes = listar_clientes(filtro_empresa=st.session_state.sku_busca_descricao)
         total = len(clientes)
-        inicio = st.session_state.cliente_pagina * PAGE_SIZE
+        inicio = st.session_state.sku_cliente_pagina * PAGE_SIZE
         fim = inicio + PAGE_SIZE
         st.write(f"Clientes: mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
 
@@ -67,8 +67,8 @@ if st.session_state.aba == "Listar":
                     id_selecionado = clientes_paginados[idx].get("id") or clientes_paginados[idx].get("id_cliente")
                     cliente_completo = next((c for c in listar_todos_dados_clientes() if (c.get("id") == id_selecionado or c.get("id_cliente") == id_selecionado)), None)
                     if cliente_completo:
-                        st.session_state.cliente_selecionado = cliente_completo
-                        st.session_state.pagina = 0
+                        st.session_state.sku_cliente_selecionado = cliente_completo
+                        st.session_state.sku_pagina = 0
                         st.rerun()
             elif len(selecionados_cli) > 1:
                 st.error("Selecione apenas 1 cliente por vez.")
@@ -76,29 +76,29 @@ if st.session_state.aba == "Listar":
         # Paginação de clientes
         col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
         total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-        if col_pag1.button("⬅️", disabled=st.session_state.cliente_pagina <= 0):
-            st.session_state.cliente_pagina -= 1
+        if col_pag1.button("⬅️", disabled=st.session_state.sku_cliente_pagina <= 0):
+            st.session_state.sku_cliente_pagina -= 1
             st.rerun()
-        col_pag2.write(f"Página {st.session_state.cliente_pagina + 1} de {total_paginas}")
-        if col_pag3.button("➡️", disabled=(st.session_state.cliente_pagina + 1) >= total_paginas):
-            st.session_state.cliente_pagina += 1
+        col_pag2.write(f"Página {st.session_state.sku_cliente_pagina + 1} de {total_paginas}")
+        if col_pag3.button("➡️", disabled=(st.session_state.sku_cliente_pagina + 1) >= total_paginas):
+            st.session_state.sku_cliente_pagina += 1
             st.rerun()
 
         # Não mostrar botões de ação antes da seleção do cliente
         st.stop()
 
     # Se chegou aqui, há um cliente selecionado: mostrar produtos apenas deste cliente
-    cliente = st.session_state.cliente_selecionado
+    cliente = st.session_state.sku_cliente_selecionado
     st.success(f"## Produtos da empresa   :point_right: {cliente.get('empresa')}",icon=':material/thermostat:')
     if st.button("Limpar seleção de cliente"):
-        st.session_state.cliente_selecionado = None
+        st.session_state.sku_cliente_selecionado = None
         st.rerun()
-    # # print("ID do cliente selecionado para filtro de produtos:", cliente.get('id') or cliente.get('id_cliente'))
-    # # print("Cliente selecionado (completo):", cliente)
+    # print("ID do cliente selecionado para filtro de produtos:", cliente.get('id') or cliente.get('id_cliente'))
+    # print("Cliente selecionado (completo):", cliente)
     
     produtos = listar_produtos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
     total = len(produtos)
-    inicio = st.session_state.pagina * PAGE_SIZE
+    inicio = st.session_state.sku_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
     st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
 
@@ -137,50 +137,50 @@ if st.session_state.aba == "Listar":
                 produto_completo = next((c for c in listar_todos_dados_produtos() if c.get("id") == id_selecionado), None)
 
                 if produto_completo:
-                    st.session_state.produto_selecionado = produto_completo
+                    st.session_state.sku_selecionado = produto_completo
         elif len(selecionados) > 1:
             st.error("Selecione apenas 1 produto por vez.")
         else:
-            st.session_state.produto_selecionado = None
+            st.session_state.sku_selecionado = None
 
     col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
     
     total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
-    if col_pag1.button("⬅️", disabled=st.session_state.pagina <= 0):
-        st.session_state.pagina -= 1
+    if col_pag1.button("⬅️", disabled=st.session_state.sku_pagina <= 0):
+        st.session_state.sku_pagina -= 1
         st.rerun()
 
-    col_pag2.write(f"Página {st.session_state.pagina + 1} de {total_paginas}")
+    col_pag2.write(f"Página {st.session_state.sku_pagina + 1} de {total_paginas}")
 
-    if col_pag3.button("➡️", disabled=(st.session_state.pagina + 1) >= total_paginas):
-        st.session_state.pagina += 1
+    if col_pag3.button("➡️", disabled=(st.session_state.sku_pagina + 1) >= total_paginas):
+        st.session_state.sku_pagina += 1
         st.rerun()
 
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         if col1.button("Listar"):
-            st.session_state.aba = "Listar"
+            st.session_state.sku_aba = "Listar"
             st.rerun()
         if col2.button("Incluir"):
-            st.session_state.aba = "Incluir"
+            st.session_state.sku_aba = "Incluir"
             st.rerun()
         if col3.button("Alterar"):
-            st.session_state.aba = "Alterar"
+            st.session_state.sku_aba = "Alterar"
             st.rerun()
         if col4.button("Excluir"):
-            st.session_state.aba = "Excluir"
-elif st.session_state.aba == "Incluir":
+            st.session_state.sku_aba = "Excluir"
+elif st.session_state.sku_aba == "Incluir":
     st.subheader("Incluir Produto")
 
     # Verifica se há cliente selecionado
-    if st.session_state.cliente_selecionado is None:
+    if st.session_state.sku_cliente_selecionado is None:
         st.warning("Selecione um cliente antes de incluir um produto.")
         if st.button("Escolher cliente"):
-            st.session_state.aba = "Listar"
+            st.session_state.sku_aba = "Listar"
             st.rerun()
     else:
-        cliente = st.session_state.cliente_selecionado
+        cliente = st.session_state.sku_cliente_selecionado
         # Exibir via componente HTML para garantir que estilo seja aplicado
         html = f"""
         <style>
@@ -219,8 +219,8 @@ elif st.session_state.aba == "Incluir":
 
             if sair_sem_salvar:
                 # Abandonar inclusão e voltar para seleção de cliente
-                st.session_state.cliente_selecionado = None
-                st.session_state.aba = "Listar"
+                st.session_state.sku_cliente_selecionado = None
+                st.session_state.sku_aba = "Listar"
                 st.rerun()
 
             if salvar:
@@ -241,23 +241,23 @@ elif st.session_state.aba == "Incluir":
                     incluir_produto(novo_produto)
                     st.success("Produto incluído com sucesso!")
                     # Limpar seleção de produto e voltar para listagem
-                    st.session_state.produto_selecionado = None
-                    st.session_state.aba = "Listar"
+                    st.session_state.sku_selecionado = None
+                    st.session_state.sku_aba = "Listar"
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro ao incluir produto: {e}")
 
-elif st.session_state.aba == "Alterar":
+elif st.session_state.sku_aba == "Alterar":
     st.subheader("Alterar Produto")
 
-    if st.session_state.produto_selecionado is None:
+    if st.session_state.sku_selecionado is None:
         st.warning("Selecione um produto na lista antes de alterar.")
         if st.button("Voltar para lista"):
-            st.session_state.aba = "Listar"
+            st.session_state.sku_aba = "Listar"
             st.rerun()
     else:
-        produto = st.session_state.produto_selecionado
-        cliente = st.session_state.cliente_selecionado
+        produto = st.session_state.sku_selecionado
+        cliente = st.session_state.sku_cliente_selecionado
 
         # Mostrar cliente não editável
         st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
@@ -286,8 +286,8 @@ elif st.session_state.aba == "Alterar":
                 cancelar = st.form_submit_button("Cancelar")
 
             if cancelar:
-                st.session_state.produto_selecionado = None
-                st.session_state.aba = "Listar"
+                st.session_state.sku_selecionado = None
+                st.session_state.sku_aba = "Listar"
                 st.rerun()
 
             if salvar:
@@ -308,35 +308,35 @@ elif st.session_state.aba == "Alterar":
                     prod_id = produto.get('id')
                     alterar_produto(prod_id, dados)
                     st.success("Produto alterado com sucesso!")
-                    st.session_state.produto_selecionado = None
-                    st.session_state.aba = "Listar"
+                    st.session_state.sku_selecionado = None
+                    st.session_state.sku_aba = "Listar"
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro ao alterar produto: {e}")
 
-elif st.session_state.aba == "Excluir":
+elif st.session_state.sku_aba == "Excluir":
     st.subheader("Excluir Produto")
 
-    if st.session_state.produto_selecionado is None:
+    if st.session_state.sku_selecionado is None:
         st.warning("Selecione um produto na lista antes de excluir.")
         if st.button("Voltar para lista"):
-            st.session_state.aba = "Listar"
+            st.session_state.sku_aba = "Listar"
             st.rerun()
     else:
-        produto = st.session_state.produto_selecionado
+        produto = st.session_state.sku_selecionado
         st.markdown(f"**Produto selecionado:** {produto.get('descricao')} ({produto.get('codigo')})")
         col_confirm, col_cancel = st.columns([1, 1])
         if col_cancel.button("Cancelar"):
-            st.session_state.produto_selecionado = None
-            st.session_state.aba = "Listar"
+            st.session_state.sku_selecionado = None
+            st.session_state.sku_aba = "Listar"
             st.rerun()
         if col_confirm.button("Confirmar Exclusão"):
             try:
                 prod_id = produto.get('id')
                 excluir_produto(prod_id)
                 st.success("Produto excluído com sucesso")
-                st.session_state.produto_selecionado = None
-                st.session_state.aba = "Listar"
+                st.session_state.sku_selecionado = None
+                st.session_state.sku_aba = "Listar"
                 st.rerun()
             except Exception as e:
                 st.error(f"Erro ao excluir produto: {e}")

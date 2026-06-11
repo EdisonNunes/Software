@@ -685,4 +685,129 @@ def verificar_uso_area(area_id):
 
     except Exception:
         return False
-    
+# ============================================================================================
+# create table public.equipamentos (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   cliente_id uuid null,
+#   codigo text not null,
+#   descricao text not null,
+#   constraint equipamentos_pkey primary key (id),
+#   constraint equipamentos_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
+# ) TABLESPACE pg_default;
+# create index IF not exists idx_equipamentos_cliente_id on public.equipamentos using btree (cliente_id) TABLESPACE pg_default;
+# create index IF not exists idx_equipamentos_descricao on public.equipamentos using btree (descricao) TABLESPACE pg_default;
+# create unique INDEX IF not exists idx_equipamentos_cliente_codigo on public.equipamentos using btree (cliente_id, codigo) TABLESPACE pg_default;
+
+def listar_equipamentos(cliente_id=""):
+    query = (
+        supabase
+        .table("equipamentos")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            classif,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_equipamentos(cliente_id=""):
+    query = (
+        supabase
+        .table("equipamentos")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_equipamento(
+    codigo,
+    descricao,
+    classif,
+    cliente_id
+):
+    response = (
+        supabase
+        .table("equipamentos")
+        .insert(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "classif": classif,
+                "cliente_id": cliente_id
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+def alterar_equipamento(
+    equipamento_id,
+    codigo,
+    classif,
+    descricao
+):
+    response = (
+        supabase
+        .table("equipamentos")
+        .update(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "classif": classif
+            }
+        )
+        .eq("id", equipamento_id)
+        .execute()
+    )
+
+    return response.data
+
+def excluir_equipamento(equipamento_id):
+    response = (
+        supabase
+        .table("equipamentos")
+        .delete()
+        .eq("id", equipamento_id)
+        .execute()
+    )
+
+    return response.data
+
+def verificar_uso_equipamento(equipamento_id):
+    try:
+
+        response = (
+            supabase
+            .table("produtos")
+            .select("id")
+            .eq("equipamento_id", equipamento_id)
+            .limit(1)
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception:
+        return False
+        

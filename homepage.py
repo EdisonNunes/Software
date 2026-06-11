@@ -11,7 +11,9 @@ conteiner = coluna_direita.container(border=False)
 with conteiner:
      st.markdown('Desenvolvido por FBJ Pharma')
      st.markdown(':point_right: Versão 1.0')
-     st.markdown(f'Usuário: {st.session_state.user_name}')
+     st.markdown(f'Usuário: {st.session_state.user_name}') 
+     st.markdown(f'Tipo de acesso: {st.session_state.role.upper()}') 
+
 
 if "ger_aba" in st.session_state:
     st.session_state.ger_aba = "Listar"
