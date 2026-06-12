@@ -5,7 +5,7 @@ import pandas as pd
 
 from crud import supabase,  listar_clientes, listar_todos_dados_clientes, incluir_cliente,excluir_cliente, alterar_cliente
 
-st.info(f'### Clientes Cadastrados',icon=':material/groups:')
+st.info(f'### Clientes Cadastrados',icon=':material/factory:')
 
 # Inicializa session_state
 if "user" not in st.session_state:
@@ -304,7 +304,6 @@ elif st.session_state.aba == "Alterar":
 
             if submitted_alter:
                 try:
-                    print(f"Alterando cliente ID {cliente['id']} com dados: {dados}")
                     alterar_cliente(cliente["id"], dados)
                     st.success("Cliente alterado com sucesso!")
                     st.session_state.aba = "Listar"

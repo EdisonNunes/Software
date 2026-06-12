@@ -35,6 +35,7 @@ if st.session_state.sku_aba == "Listar":
 
     if st.session_state.sku_cliente_selecionado is None:
         clientes = listar_clientes(filtro_empresa=st.session_state.sku_busca_descricao)
+
         total = len(clientes)
         inicio = st.session_state.sku_cliente_pagina * PAGE_SIZE
         fim = inicio + PAGE_SIZE
@@ -93,8 +94,6 @@ if st.session_state.sku_aba == "Listar":
     if st.button("Limpar seleção de cliente"):
         st.session_state.sku_cliente_selecionado = None
         st.rerun()
-    # print("ID do cliente selecionado para filtro de produtos:", cliente.get('id') or cliente.get('id_cliente'))
-    # print("Cliente selecionado (completo):", cliente)
     
     produtos = listar_produtos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
     total = len(produtos)
@@ -189,6 +188,10 @@ elif st.session_state.sku_aba == "Incluir":
         <div class="selected-client">Cliente selecionado: {cliente.get('empresa')}</div>
         """
         components.html(html, height=60)
+        lista_areas = []
+        lista_areas = listar_todos_dados_areas(cliente.get('id') or cliente.get('id_cliente'))
+        lista_equipamentos = []
+        lista_equipamentos = listar_todos_dados_equipamentos(cliente.get('id') or cliente.get('id_cliente'))
 
         # Formulário aprimorado em colunas
         with st.form("form_incluir_produto"):
@@ -200,13 +203,13 @@ elif st.session_state.sku_aba == "Incluir":
                 codigo = st.text_input("Código", max_chars=50)
                 descricao = st.text_input("Descrição", max_chars=255)
                 familia = st.text_input("Família")
-                area_produtiva = st.text_input("Área Produtiva")
+                area_produtiva = st.selectbox("Área Produtiva", options=[area.get('descricao') for area in lista_areas], width=300)
                 area_embalagem = st.text_input("Área de Embalagem")
 
             with col2:
                 lote_padrao = st.number_input("Lote Padrão", min_value=0.0, step=1.0, format="%f")
                 area_rota = st.text_input("Área Rota")
-                equipamento = st.text_input("Equipamento")
+                equipamento = st.selectbox("Equipamento", options=[equipamento.get('descricao') for equipamento in lista_equipamentos], width=300)
                 classificacao = st.text_input("Classificação")
                 tempo_ciclo = st.number_input("Tempo de Ciclo", min_value=0.0, step=0.1)
 
@@ -261,6 +264,31 @@ elif st.session_state.sku_aba == "Alterar":
 
         # Mostrar cliente não editável
         st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
+        lista_areas = []
+        lista_areas = listar_todos_dados_areas(cliente.get('id') or cliente.get('id_cliente'))
+        lista_equipamentos = []
+        lista_equipamentos = listar_todos_dados_equipamentos(cliente.get('id') or cliente.get('id_cliente'))
+
+        opcoes_areas = [area.get('descricao')
+            for area in lista_areas
+        ]
+        area_atual = produto.get('area_produtiva','')
+
+        indice_area = (
+            opcoes_areas.index(area_atual)
+            if area_atual in opcoes_areas
+            else 0
+        )
+
+        opcoes_equipamentos = [equipamento.get('descricao')
+            for equipamento in lista_equipamentos
+        ]
+        equipamento_atual = produto.get('equipamento','')    
+        indice_equipamento = (
+            opcoes_equipamentos.index(equipamento_atual)
+            if equipamento_atual in opcoes_equipamentos
+            else 0
+        )
 
         # Form para alterar
         with st.form("form_alterar_produto"):
@@ -269,12 +297,12 @@ elif st.session_state.sku_aba == "Alterar":
                 codigo = st.text_input("Código", value=produto.get('codigo', ''), max_chars=50)
                 descricao = st.text_input("Descrição", value=produto.get('descricao', ''), max_chars=255)
                 familia = st.text_input("Família", value=produto.get('familia', ''))
-                area_produtiva = st.text_input("Área Produtiva", value=produto.get('area_produtiva', ''))
+                area_produtiva = st.selectbox("Área Produtiva", options=opcoes_areas, index=indice_area, width=300)
                 area_embalagem = st.text_input("Área de Embalagem", value=produto.get('area_embalagem', ''))
             with col2:
                 lote_padrao = st.number_input("Lote Padrão", value=float(produto.get('lote_padrao') or 0.0), min_value=0.0, step=1.0, format="%f")
                 area_rota = st.text_input("Área Rota", value=produto.get('area_rota', ''))
-                equipamento = st.text_input("Equipamento", value=produto.get('equipamento', ''))
+                equipamento = st.selectbox("Equipamento", options=opcoes_equipamentos, index=indice_equipamento, width=300)
                 classificacao = st.text_input("Classificação", value=produto.get('classificacao', ''))
                 tempo_ciclo = st.number_input("Tempo de Ciclo", value=float(produto.get('tempo_ciclo') or 0.0), min_value=0.0, step=0.1)
 

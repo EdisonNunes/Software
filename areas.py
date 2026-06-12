@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 from crud import listar_clientes, listar_todos_dados_clientes
 from crud import listar_areas, listar_todos_dados_areas, incluir_area, alterar_area, excluir_area
-st.info(f'# Áreas Cadastradas',icon=':material/thermostat:')
+st.info(f'# Cadastro de Áreas de Produção',icon=':material/activity_zone:')
 
 if "area_aba" not in st.session_state:
     st.session_state.area_aba = "Listar"
@@ -97,15 +97,14 @@ if st.session_state.area_aba == "Listar":
 
     # Se chegou aqui, há um cliente selecionado: mostrar Áreas apenas deste cliente
     cliente = st.session_state.area_cliente_selecionado
-    st.success(f"# Áreas da empresa   :point_right: {cliente.get('empresa')}",icon=':material/thermostat:')
+    st.success(f"# Áreas da empresa   :point_right: {cliente.get('empresa')}",icon=':material/activity_zone:')
     if st.button("Limpar seleção de cliente"):
         st.session_state.area_cliente_selecionado = None
         st.rerun()
-    # # print("ID do cliente selecionado para filtro de Áreas:", cliente.get('id') or cliente.get('id_cliente'))
-    # # print("Cliente selecionado (completo):", cliente)
+    #print("ID do cliente selecionado para filtro de Áreas:", cliente.get('id') or cliente.get('id_cliente'))
+    #print("Cliente selecionado (completo):", cliente)
     
-    #areas = listar_areas(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
-    areas = listar_areas(cliente.get('id_cliente'))
+    areas = listar_areas(cliente.get('id') or cliente.get('id_cliente'))
     total = len(areas)
     inicio = st.session_state.pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE

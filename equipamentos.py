@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 from crud import listar_clientes, listar_todos_dados_clientes
 from crud import listar_equipamentos, listar_todos_dados_equipamentos, incluir_equipamento, alterar_equipamento, excluir_equipamento
-st.info(f'# Equipamentos Cadastrados',icon=':material/thermostat:')
+st.info(f'# Cadastrados de Equipamentos',icon=':material/precision_manufacturing:')
 
 if "equip_aba" not in st.session_state:
     st.session_state.equip_aba = "Listar"
@@ -97,15 +97,14 @@ if st.session_state.equip_aba == "Listar":
 
     # Se chegou aqui, há um cliente selecionado: mostrar Equipamentos apenas deste cliente
     cliente = st.session_state.equip_cliente_selecionado
-    st.success(f"# Equipamentos da empresa   :point_right: {cliente.get('empresa')}",icon=':material/thermostat:')
+    st.success(f"# Equipamentos da empresa   :point_right: {cliente.get('empresa')}",icon=':material/precision_manufacturing:')
     if st.button("Limpar seleção de cliente"):
         st.session_state.equip_cliente_selecionado = None
         st.rerun()
     # # print("ID do cliente selecionado para filtro de Equipamentos:", cliente.get('id') or cliente.get('id_cliente'))
     # # print("Cliente selecionado (completo):", cliente)
     
-    #equipamentos = listar_equipamentos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
-    equipamentos = listar_equipamentos(cliente.get('id_cliente'))
+    equipamentos = listar_equipamentos(cliente.get('id') or cliente.get('id_cliente'))
     total = len(equipamentos)
     inicio = st.session_state.pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
@@ -210,7 +209,7 @@ elif st.session_state.equip_aba == "Incluir":
             # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
             codigo = st.text_input("Código", max_chars=50)
             descricao = st.text_input("Descrição", max_chars=255)
-            classif = st.selectbox("Classificação", ["Primário", "Secundário"], width=200)
+            classif = st.selectbox("Classificação", ["Principal", "Secundário"], width=200)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -261,7 +260,7 @@ elif st.session_state.equip_aba == "Alterar":
             with col1:
                 codigo = st.text_input("Código", value=equipamento.get('codigo', ''), max_chars=50)
                 descricao = st.text_input("Descrição", value=equipamento.get('descricao', ''), max_chars=255)
-                classif = st.selectbox("Classificação", ["Primário", "Secundário"], index=0 if equipamento.get('classif') == "Primário" else 1, width=200)
+                classif = st.selectbox("Classificação", ["Principal", "Secundário"], index=0 if equipamento.get('classif') == "Principal" else 1, width=200)
                 # Ações
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:

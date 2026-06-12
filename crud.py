@@ -403,20 +403,6 @@ def listar_usuarios(cliente_id):
                     perfil["id"]
                 )
 
-                # usuarios.append({
-                #     "id": perfil["id"],
-                #     "cliente_id": perfil["cliente_id"],
-                #     "nome": (
-                #         user.user.user_metadata.get(
-                #             "display_name",
-                #             ""
-                #         )
-                #         if user.user.user_metadata
-                #         else ""
-                #     ),
-                #     "email": user.user.email,
-                #     "tipo": perfil["role"]
-                # })
                 usuarios.append({
                     "id": perfil["id"],
                     "cliente_id": perfil["cliente_id"],
