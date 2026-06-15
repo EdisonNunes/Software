@@ -249,9 +249,22 @@ def handle_successful_auth(session, username: str):
     )
 
     if perfil.data:
+        # print("Perfil encontrado:", perfil.data)
         st.session_state.role = perfil.data["role"]
         st.session_state.cliente_id = perfil.data["cliente_id"]
+        st.session_state.empresa = ""
 
+        if st.session_state.cliente_id:
+            cliente = (
+                supabase_client
+                .table("clientes")
+                .select("empresa")
+                .eq("id", st.session_state.cliente_id)
+                .single()
+                .execute()
+            )
+            if cliente.data:
+                st.session_state.empresa = cliente.data["empresa"]
         # print("ROLE:", st.session_state.role)
         # print("CLIENTE_ID:", st.session_state.cliente_id)
 
