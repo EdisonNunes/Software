@@ -311,7 +311,6 @@ def excluir_cliente(id):
 #   lote_padrao numeric null,
 #   area_rota text null,
 #   equipamento text null,
-#   classificacao text null,
 #   tempo_ciclo numeric null,
 #   constraint produtos_pkey primary key (id),
 #   constraint produtos_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
@@ -320,7 +319,7 @@ def excluir_cliente(id):
 def listar_produtos(filtro_produto=""):
     # print("Filtro de produto recebido:", filtro_produto)
 
-    query = supabase.table("produtos").select("id, codigo, descricao, familia, area_produtiva, area_embalagem, lote_padrao, area_rota, equipamento, classificacao, tempo_ciclo")
+    query = supabase.table("produtos").select("id, codigo, descricao, familia, area_produtiva, area_embalagem, lote_padrao, area_rota, equipamento, tempo_ciclo")
     
     # Apenas Admin/Supervisor terão acesso a outras empresas,
     # pois a própria RLS permitirá.
