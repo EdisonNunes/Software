@@ -796,3 +796,143 @@ def verificar_uso_equipamento(equipamento_id):
     except Exception:
         return False
         
+# ============================================================================================
+#  create table public.linhas (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   cliente_id uuid not null,
+#   codigo text not null,
+#   descricao text not null,
+#   responsavel text null,
+#   constraint linhas_pkey primary key (id),
+#   constraint linhas_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
+# ) TABLESPACE pg_default;
+# create index IF not exists idx_linhas_cliente_id on public.linhas using btree (cliente_id) TABLESPACE pg_default;
+# create index IF not exists idx_linhas_codigo on public.linhas using btree (codigo) TABLESPACE pg_default;
+# create index IF not exists idx_linhas_descricao on public.linhas using btree (descricao) TABLESPACE pg_default;
+
+def listar_linhas(cliente_id=""):
+    query = (
+        supabase
+        .table("linhas")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            responsavel,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_linhas(cliente_id=""):
+    query = (
+        supabase
+        .table("linhas")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_linha(
+    codigo,
+    descricao,
+    responsavel,
+    cliente_id
+):
+    print("Incluindo linha com dados:", {
+        "codigo": codigo,
+        "descricao": descricao,
+        "responsavel": responsavel,
+        "cliente_id": cliente_id
+    })
+    response = (
+        supabase
+        .table("linhas")
+        .insert(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "responsavel": responsavel,
+                "cliente_id": cliente_id
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def alterar_linha(
+    linha_id,
+    codigo,
+    descricao,
+    responsavel
+):
+    print("Alterando linha com dados:", {
+        "linha_id": linha_id,
+        "codigo": codigo,
+        "descricao": descricao,
+        "responsavel": responsavel
+    })
+    response = (
+        supabase
+        .table("linhas")
+        .update(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "responsavel": responsavel
+            }
+        )
+        .eq("id", linha_id)
+        .execute()
+    )
+
+    return response.data
+
+def excluir_linha(linha_id):
+    print("Excluindo linha com ID:", linha_id)
+    response = (
+        supabase
+        .table("linhas")
+        .delete()
+        .eq("id", linha_id)
+        .execute()
+    )
+
+    return response.data
+
+def verificar_uso_linha(linha_id):
+    try:
+
+        response = (
+            supabase
+            .table("produtos")
+            .select("id")
+            .eq("linha_id", linha_id)
+            .limit(1)
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception:
+        return False

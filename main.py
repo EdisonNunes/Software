@@ -4,6 +4,7 @@ from login import show_login_page
 from theme import apply_streamlit_theme
 from crud import supabase
 
+
 def logout():
 
     try:
@@ -52,6 +53,7 @@ if st.session_state.role == "supervisor" or st.session_state.role == "admin":
                             ],
         'Cadastros Gerais': [
                             st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
+                            st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
                             st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
                             ],                
             'Supervisor':   [
@@ -76,7 +78,8 @@ else:
                             ],
         'Cadastros Gerais': [
                             st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
-                            st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
+                            st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
+                             st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
                             ],                
         'Configurações':   [
                             st.Page('produtos.py',  title='Cadastro SKU', icon=':material/thermostat:'),
