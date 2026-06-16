@@ -22,11 +22,7 @@ def logout():
     st.rerun()
 
 
-# Define estado inicial da sidebar com base na flag de mostrar só login
-initial_sidebar = (
-    "collapsed" if st.session_state.get("show_login_only") else "expanded"
-)
-st.set_page_config(layout="wide", page_title="FBJ Pharma", initial_sidebar_state=initial_sidebar)
+st.set_page_config(layout="wide", page_title="FBJ Pharma")
 
 show_login_page()
 
