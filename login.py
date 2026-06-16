@@ -11,6 +11,9 @@ def initialize_login_state():
         st.session_state.user = None
     if "user_name" not in st.session_state:
         st.session_state.user_name = None
+    if "show_login_only" not in st.session_state:
+        # Por padrão, mostrar apenas a tela de login na primeira entrada
+        st.session_state.show_login_only = True
 
 
 def get_login_card_background():
@@ -87,6 +90,11 @@ def show_login_page():
             display:none;
         }}
 
+        /* Esconder a barra lateral de navegação nas telas de login */
+        div[data-testid="stSidebar"] {{
+            display: none !important;
+        }}
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -111,14 +119,16 @@ def show_login_page():
             username = st.text_input(
                 "E-mail",
                 #placeholder="usuario@empresa.com",
-                value = 'fabio.barreto@gmail.com'
+                value = 'marilia@gmail.com'
+                #value = 'fabio.barreto@gmail.com'
             )
 
             password = st.text_input(
                 "Senha",
                 type="password",
                 #placeholder="Digite sua senha",
-                value = 'fab1234'
+                value = '123456'
+                #value = 'fab1234'
             )
 
             submitted = st.form_submit_button("Entrar")
@@ -267,5 +277,8 @@ def handle_successful_auth(session, username: str):
                 st.session_state.empresa = cliente.data["empresa"]
         # print("ROLE:", st.session_state.role)
         # print("CLIENTE_ID:", st.session_state.cliente_id)
+
+    # Após autenticação bem sucedida, liberar a exibição da navegação
+    st.session_state.show_login_only = False
 
     st.rerun()

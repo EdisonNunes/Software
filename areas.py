@@ -38,75 +38,90 @@ if st.session_state.area_aba == "Listar":
     if busca_atual != st.session_state.area_busca_descricao:
         st.session_state.area_busca_descricao = busca_atual
         st.session_state.area_cliente_pagina = 0
-        st.session_state.pagina = 0
+        st.session_state.area_pagina = 0
         st.rerun()
 
-    if st.session_state.area_cliente_selecionado is None:
-        clientes = listar_clientes(filtro_empresa=st.session_state.area_busca_descricao)
-        total = len(clientes)
-        inicio = st.session_state.area_cliente_pagina * PAGE_SIZE
-        fim = inicio + PAGE_SIZE
-        st.write(f"Clientes: mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
+    #print("st.session_state.area_cliente_selecionado:", st.session_state.area_cliente_selecionado)
+    if st.session_state.area_cliente_selecionado is None: 
+        # Admin e Supervisor escolhem a empresa
+        #print("Role do usuário:", st.session_state.get("role"))
+        #print("st.session_state.get('role'):", st.session_state.get("role"))
+        if st.session_state.get("role") in ["admin", "supervisor"]:                                       
+            clientes = listar_clientes(filtro_empresa=st.session_state.area_busca_descricao)
+            total = len(clientes)
+            inicio = st.session_state.area_cliente_pagina * PAGE_SIZE
+            fim = inicio + PAGE_SIZE
+            st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
 
-        if clientes:
-            clientes_paginados = clientes[inicio:fim]
-            df_clientes = pd.DataFrame(clientes_paginados).copy()
-            df_clientes["Selecionar"] = False
+            if clientes:
+                clientes_paginados = clientes[inicio:fim]
+                df_clientes = pd.DataFrame(clientes_paginados).copy()
+                df_clientes["Selecionar"] = False
 
-            cols_clientes = ["Selecionar", "empresa", "cidade", "telefone", "contato"]
+                cols_clientes = ["Selecionar", "empresa", "cidade", "telefone", "contato"]
 
-            selecao_cli = st.data_editor(
-                df_clientes[cols_clientes].reset_index(drop=True),
-                hide_index=True,
-                column_config={
-                    "Selecionar": st.column_config.CheckboxColumn("Selecionar", help="Marque para selecionar"),
-                    "empresa": st.column_config.TextColumn("Empresa"),
-                    "cidade": st.column_config.TextColumn("Cidade"),
-                    "telefone": st.column_config.TextColumn("Telefone"),
-                    "contato": st.column_config.TextColumn("Contato"),
-                },
-                key="grid_clientes"
-            )
+                selecao_cli = st.data_editor(
+                    df_clientes[cols_clientes].reset_index(drop=True),
+                    hide_index=True,
+                    column_config={
+                        "Selecionar": st.column_config.CheckboxColumn("Selecionar", help="Marque para selecionar"),
+                        "empresa": st.column_config.TextColumn("Empresa"),
+                        "cidade": st.column_config.TextColumn("Cidade"),
+                        "telefone": st.column_config.TextColumn("Telefone"),
+                        "contato": st.column_config.TextColumn("Contato"),
+                    },
+                    key="grid_clientes"
+                )
 
-            selecionados_cli = selecao_cli[selecao_cli["Selecionar"] == True]
-            if len(selecionados_cli) == 1:
-                idx = selecionados_cli.index[0]
-                if idx < len(clientes_paginados):
-                    id_selecionado = clientes_paginados[idx].get("id") or clientes_paginados[idx].get("id_cliente")
-                    cliente_completo = next((c for c in listar_todos_dados_clientes() if (c.get("id") == id_selecionado or c.get("id_cliente") == id_selecionado)), None)
-                    if cliente_completo:
-                        st.session_state.area_cliente_selecionado = cliente_completo
-                        st.session_state.pagina = 0
-                        st.rerun()
-            elif len(selecionados_cli) > 1:
-                st.error("Selecione apenas 1 cliente por vez.")
+                selecionados_cli = selecao_cli[selecao_cli["Selecionar"] == True]
+                if len(selecionados_cli) == 1:
+                    idx = selecionados_cli.index[0]
+                    if idx < len(clientes_paginados):
+                        id_selecionado = clientes_paginados[idx].get("id") or clientes_paginados[idx].get("id_cliente")
+                        cliente_completo = next((c for c in listar_todos_dados_clientes() if (c.get("id") == id_selecionado or c.get("id_cliente") == id_selecionado)), None)
+                        if cliente_completo:
+                            st.session_state.area_cliente_selecionado = cliente_completo
+                            st.session_state.area_pagina = 0
+                            st.rerun()
+                elif len(selecionados_cli) > 1:
+                    st.error("Selecione apenas 1 cliente por vez.")
 
-        # Paginação de clientes
-        col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
-        total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-        if col_pag1.button("⬅️", disabled=st.session_state.area_cliente_pagina <= 0):
-            st.session_state.area_cliente_pagina -= 1
-            st.rerun()
-        col_pag2.write(f"Página {st.session_state.area_cliente_pagina + 1} de {total_paginas}")
-        if col_pag3.button("➡️", disabled=(st.session_state.area_cliente_pagina + 1) >= total_paginas):
-            st.session_state.area_cliente_pagina += 1
-            st.rerun()
+            # Paginação de clientes
+            col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
+            total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+            if col_pag1.button("⬅️", disabled=st.session_state.area_cliente_pagina <= 0):
+                st.session_state.area_cliente_pagina -= 1
+                st.rerun()
+            col_pag2.write(f"Página {st.session_state.area_cliente_pagina + 1} de {total_paginas}")
+            if col_pag3.button("➡️", disabled=(st.session_state.area_cliente_pagina + 1) >= total_paginas):
+                st.session_state.area_cliente_pagina += 1
+                st.rerun()
 
-        # Não mostrar botões de ação antes da seleção do cliente
-        st.stop()
+            # Não mostrar botões de ação antes da seleção do cliente
+            st.stop()
+       # Gerente e Funcionário usam automaticamente sua empresa
+        else:
+            cliente_completo = next((c for c in listar_todos_dados_clientes()
+                    if c.get("id") == st.session_state.get("cliente_id")), None)
+
+            if cliente_completo:
+                st.session_state.area_cliente_selecionado = (cliente_completo)
+                st.rerun()
 
     # Se chegou aqui, há um cliente selecionado: mostrar Áreas apenas deste cliente
     cliente = st.session_state.area_cliente_selecionado
-    st.success(f"# Áreas da empresa   :point_right: {cliente.get('empresa')}",icon=':material/activity_zone:')
-    if st.button("Limpar seleção de cliente"):
-        st.session_state.area_cliente_selecionado = None
-        st.rerun()
+    if cliente and st.session_state.get("role") in ["admin", "supervisor"]:
+        st.success(f"# Áreas da empresa   :point_right: {cliente.get('empresa')}",icon=':material/activity_zone:')
+        if st.button("Limpar seleção de cliente"):
+            st.session_state.area_cliente_selecionado = None
+            st.rerun()
+            #print("ID do cliente selecionado para filtro de Áreas:", cliente.get('id') or cliente.get('id_cliente'))
+            #print("Cliente selecionado (completo):", cliente)
     #print("ID do cliente selecionado para filtro de Áreas:", cliente.get('id') or cliente.get('id_cliente'))
     #print("Cliente selecionado (completo):", cliente)
-    
     areas = listar_areas(cliente.get('id') or cliente.get('id_cliente'))
     total = len(areas)
-    inicio = st.session_state.pagina * PAGE_SIZE
+    inicio = st.session_state.area_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
     st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
 
@@ -157,14 +172,14 @@ if st.session_state.area_aba == "Listar":
     
     total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
-    if col_pag1.button("⬅️", disabled=st.session_state.pagina <= 0):
-        st.session_state.pagina -= 1
+    if col_pag1.button("⬅️", disabled=st.session_state.area_pagina <= 0):
+        st.session_state.area_pagina -= 1
         st.rerun()
 
-    col_pag2.write(f"Página {st.session_state.pagina + 1} de {total_paginas}")
+    col_pag2.write(f"Página {st.session_state.area_pagina + 1} de {total_paginas}")
 
-    if col_pag3.button("➡️", disabled=(st.session_state.pagina + 1) >= total_paginas):
-        st.session_state.pagina += 1
+    if col_pag3.button("➡️", disabled=(st.session_state.area_pagina + 1) >= total_paginas):
+        st.session_state.area_pagina += 1
         st.rerun()
 
     with st.container():
