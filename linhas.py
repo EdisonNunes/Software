@@ -195,6 +195,8 @@ if st.session_state.linha_aba == "Listar":
             st.rerun()
         if col4.button("Excluir"):
             st.session_state.linha_aba = "Excluir"
+            st.rerun()
+            
 elif st.session_state.linha_aba == "Incluir":
     st.subheader("Incluir Linha")
 

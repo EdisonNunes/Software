@@ -54,6 +54,7 @@ if st.session_state.role == "supervisor" or st.session_state.role == "admin":
         'Cadastros Gerais': [
                             st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
                             st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
+                            st.Page('processos.py', title='Processos',        icon=':material/conveyor_belt:'),
                             st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
                             ],                
             'Supervisor':   [
@@ -79,6 +80,7 @@ else:
         'Cadastros Gerais': [
                             st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
                             st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
+                            st.Page('processos.py', title='Processos',        icon=':material/conveyor_belt:'),
                              st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
                             ],                
         'Configurações':   [

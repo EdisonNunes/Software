@@ -567,7 +567,7 @@ def excluir_usuario(user_id):
 def listar_areas(cliente_id=""):
     query = (
         supabase
-        .table("areas")
+        .table("processos")
         .select(
             """
             id,
@@ -928,6 +928,128 @@ def verificar_uso_linha(linha_id):
             .table("produtos")
             .select("id")
             .eq("linha_id", linha_id)
+            .limit(1)
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception:
+        return False
+
+# ============================================================================================
+# create table public.processos (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   cliente_id uuid not null,
+#   codigo text not null,
+#   descricao text not null,
+#   constraint processos_pkey primary key (id)
+# ) TABLESPACE pg_default;
+
+# create index IF not exists processos_cliente_id_idx on public.processos using btree (cliente_id) TABLESPACE pg_default;
+
+# create index IF not exists processos_codigo_idx on public.processos using btree (codigo) TABLESPACE pg_default;
+
+# create index IF not exists processos_descricao_idx on public.processos using btree (descricao) TABLESPACE pg_default;
+def listar_procs(cliente_id=""):
+    query = (
+        supabase
+        .table("processos")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_procs(cliente_id=""):
+    query = (
+        supabase
+        .table("processos")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_proc(
+    codigo,
+    descricao,
+    cliente_id
+):
+    response = (
+        supabase
+        .table("processos")
+        .insert(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "cliente_id": cliente_id
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+def alterar_proc(
+    area_id,
+    codigo,
+    descricao
+):
+    response = (
+        supabase
+        .table("processos")
+        .update(
+            {
+                "codigo": codigo,
+                "descricao": descricao
+            }
+        )
+        .eq("id", area_id)
+        .execute()
+    )
+
+    return response.data
+
+def excluir_proc(area_id):
+    response = (
+        supabase
+        .table("processos")
+        .delete()
+        .eq("id", area_id)
+        .execute()
+    )
+
+    return response.data
+
+def verificar_uso_proc(area_id):
+    try:
+
+        response = (
+            supabase
+            .table("produtos")
+            .select("id")
+            .eq("area_id", area_id)
             .limit(1)
             .execute()
         )
