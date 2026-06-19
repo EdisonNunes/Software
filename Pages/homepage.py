@@ -2,47 +2,12 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 
-# # # coluna_esquerda, coluna_direita = st.columns([3,1]) # Cria 2 colunas e a segunda é 50% maior que a primeira
-
-# # # conteiner = coluna_esquerda.container(border=False)
-# # # caminho_img = os.path.join("Imagens","Logo.png")
-# # # conteiner.image(caminho_img) 
-
-# # # conteiner = coluna_direita.container(border=False)
-# # # with conteiner:
-# # #      st.markdown('Desenvolvido por FBJ Pharma')
-# # #      st.markdown(':point_right: Versão 1.0')
-# # #      # Exibir empresa apenas para gerente e funcionário
-# # #      if st.session_state.get("role") not in ["admin","supervisor"]:
-# # #         empresa = st.session_state.get("empresa","")
-# # #      else:
-# # #         empresa = "FBJ Pharma"  # Exibir nome da empresa para admin e supervisor
-
-# # #      st.markdown(
-# # #      f"""
-# # #      <div style="
-# # #           color: orange;
-# # #           font-size: 24px;
-# # #           font-weight: 600;
-# # #           margin-top: 5px;
-# # #      ">
-# # #           {empresa}
-# # #      </div>
-# # #      """,
-# # #      unsafe_allow_html=True)
-# # #      st.markdown(f'Usuário: {st.session_state.user_name}') 
-# # #      st.markdown(f'Tipo de acesso: {st.session_state.role.upper()}') 
-
-
-# # # if "ger_aba" in st.session_state:
-# # #     st.session_state.ger_aba = "Listar"
-
 from Pages.crud import contar_areas, contar_linhas, contar_processos, contar_equipamentos, contar_produtos
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
 
 if not st.session_state.get("authenticated", False):
-    st.stop()
+    st.switch_page("main.py")
 
 render_app_sidebar()
 
@@ -50,8 +15,11 @@ render_app_sidebar()
 # CABEÇALHO
 # =====================================================
 
-st.title("🏭 FBJ Pharma")
-st.caption("Sistema de Planejamento e Gestão Industrial")
+col_header_left, col_header_right = st.columns([3, 2])
+
+with col_header_left:
+    st.title("🏭 FBJ Pharma")
+    st.caption("Sistema de Planejamento e Gestão Industrial")
 
 # =====================================================
 # EMPRESA
@@ -60,20 +28,28 @@ st.caption("Sistema de Planejamento e Gestão Industrial")
 empresa = st.session_state.get("empresa", "")
 
 if st.session_state.get("role") not in ["admin", "supervisor"]:
-
-    st.markdown(
-        f"""
-        <div style="
-            font-size:22px;
-            font-weight:bold;
-            color:orange;
-            margin-bottom:10px;
-        ">
-            Empresa: {empresa}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    with col_header_right:
+        st.markdown(
+            f"""
+            <div style="
+                width:100%;
+                min-height:3.25rem;
+                display:flex;
+                align-items:flex-start;
+                justify-content:flex-end;
+                text-align:right;
+                font-size:clamp(22px, 1.6vw, 30px);
+                font-weight:700;
+                color:orange;
+                margin-top:0.2rem;
+                margin-bottom:10px;
+                line-height:1.2;
+            ">
+                Empresa: {empresa}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 st.divider()
 
@@ -101,41 +77,37 @@ except Exception:
     total_equipamentos = 0
     total_produtos = 0    
 
-st.subheader("📊 Visão Geral")
+# =====================================================
+# ADMIN / SUPERVISOR / GERENTE
+# =====================================================
+if st.session_state.get("role") in ["admin", "supervisor", "gerente"]:
 
-c1, c2, c3, c4, c5 = st.columns(5)
+    st.subheader("🔐 Administração")
 
-with c1:
-    st.metric(
-        "🏭 Áreas",
-        total_areas
-    )
+    c1, c2 = st.columns(2)
 
-with c2:
-    st.metric(
-        "🏗️ Linhas",
-        total_linhas
-    )
+    with c1:
+        with st.container(border=True):
 
-with c3:
-    st.metric(
-        "⚙️ Processos",
-        total_processos
-    )
+            st.markdown("### 🏢")
+            st.markdown("**Clientes**")
 
-with c4:
-    st.metric(
-        "🔧 Equipamentos",
-        total_equipamentos
-    )
+            st.page_link(
+                "Pages/clientes.py",
+                label="Abrir"
+            )
+    with c2:
+        with st.container(border=True):
 
-with c5:
-    st.metric(
-        "📦 Produtos",
-        total_produtos
-    )
+            st.markdown("### 👥")
+            st.markdown("**Usuários**")
 
-st.divider()
+            st.page_link(
+                "Pages/usuarios.py",
+                label="Abrir"
+            )
+
+    st.divider()
 
 # =====================================================
 # ACESSOS RÁPIDOS
@@ -232,32 +204,39 @@ with c4:
         )
 
 # =====================================================
-# ADMIN / SUPERVISOR
+# INDICADORES
 # =====================================================
-if st.session_state.get("role") in ["admin", "supervisor"]:
+st.divider()
+st.subheader("📊 Visão Geral")
 
-    st.divider()
-    st.subheader("🔐 Administração")
+c1, c2, c3, c4, c5 = st.columns(5)
 
-    c1, c2 = st.columns(2)
+with c1:
+    st.metric(
+        "🏭 Áreas",
+        total_areas
+    )
 
-    with c1:
-        with st.container(border=True):
+with c2:
+    st.metric(
+        "🏗️ Linhas",
+        total_linhas
+    )
 
-            st.markdown("### 🏢")
-            st.markdown("**Clientes**")
+with c3:
+    st.metric(
+        "⚙️ Processos",
+        total_processos
+    )
 
-            st.page_link(
-                "Pages/clientes.py",
-                label="Abrir"
-            )
-    with c2:
-        with st.container(border=True):
+with c4:
+    st.metric(
+        "🔧 Equipamentos",
+        total_equipamentos
+    )
 
-            st.markdown("### 👥")
-            st.markdown("**Usuários**")
-
-            st.page_link(
-                "Pages/usuarios.py",
-                label="Abrir"
-            )        
+with c5:
+    st.metric(
+        "📦 Produtos",
+        total_produtos
+    )

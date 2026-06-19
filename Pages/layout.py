@@ -137,7 +137,7 @@ def choose_text_color(background_hex: str) -> str:
 
 
 if not st.session_state.get("authenticated", False):
-    st.stop()
+    st.switch_page("main.py")
 
 apply_streamlit_theme()
 render_app_sidebar()

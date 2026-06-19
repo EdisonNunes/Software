@@ -35,22 +35,6 @@ def resetar_tela_usuario():
     for estado in estados:
         st.session_state.pop(estado, None)        
 
-# def limpar_sessao_completa():
-
-#     # Remove todos os dados da sessão Streamlit
-#     for chave in list(st.session_state.keys()):
-#         del st.session_state[chave]
-
-#     # Limpa caches Streamlit
-#     try:
-#         st.cache_data.clear()
-#     except:
-#         pass
-
-#     try:
-#         st.cache_resource.clear()
-#     except:
-#         pass
 
 def get_login_card_background():
     theme_colors = read_streamlit_theme()
@@ -155,17 +139,18 @@ def show_login_page():
             username = st.text_input(
                 "E-mail",
                 #placeholder="usuario@empresa.com",
-                value = 'marilia@gmail.com'
+                #value = 'marilia@gmail.com'
                 #value = 'fabio.barreto@gmail.com'
+                value = 'jose@gmail.com'
             )
 
             password = st.text_input(
                 "Senha",
                 type="password",
                 #placeholder="Digite sua senha",
-                value = '123456'
+                # value = '123456'
                 # value = 'fab1234'
-            )
+                value = '123456'            )
 
             submitted = st.form_submit_button("Entrar")
 

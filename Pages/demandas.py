@@ -5,7 +5,7 @@ from components.top_menu import render_top_menu
 
 
 if not st.session_state.get("authenticated", False):
-	st.stop()
+	st.switch_page("main.py")
 
 render_app_sidebar()
 render_top_menu()

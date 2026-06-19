@@ -8,7 +8,7 @@ from components.sidebar import render_app_sidebar
 from components.session_state import ensure_session_state
 
 if not st.session_state.get("authenticated", False):
-    st.stop()
+    st.switch_page("main.py")
 
 render_app_sidebar()
 
