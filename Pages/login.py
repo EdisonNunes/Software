@@ -139,8 +139,8 @@ def show_login_page():
             username = st.text_input(
                 "E-mail",
                 #placeholder="usuario@empresa.com",
-                #value = 'marilia@gmail.com'
-                value = 'fabio.barreto@gmail.com'
+                #value = 'marilia@gmail.com',
+                value = 'fabio.barreto@gmail.com',
                 # value = 'jose@gmail.com'
             )
 
@@ -148,9 +148,10 @@ def show_login_page():
                 "Senha",
                 type="password",
                 #placeholder="Digite sua senha",
-                # value = '123456'
-                value = 'fab1234'
-                # value = '123456'            )
+                # value = '123456',
+                value = 'fab1234',
+                # value = '123456',
+                )
 
             submitted = st.form_submit_button("Entrar")
 
