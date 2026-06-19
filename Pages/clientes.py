@@ -3,43 +3,42 @@ from supabase import create_client, Client
 import os
 import pandas as pd
 
-from crud import supabase,  listar_clientes, listar_todos_dados_clientes, incluir_cliente,excluir_cliente, alterar_cliente
+from Pages.crud import supabase,  listar_clientes, listar_todos_dados_clientes, incluir_cliente,excluir_cliente, alterar_cliente
+from components.sidebar import render_app_sidebar
+from components.session_state import ensure_session_state
+
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
+render_app_sidebar()
 
 st.info(f'### Clientes Cadastrados',icon=':material/factory:')
 
 # Inicializa session_state
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "modo" not in st.session_state:
-    st.session_state.modo = "login"
-if "user_name" not in st.session_state:
-    st.session_state.user_name = None
-if "aba" not in st.session_state:
-    st.session_state.aba = "Listar"
-if "pagina" not in st.session_state:
-    st.session_state.pagina = 0
-if "busca_empresa" not in st.session_state:
-    st.session_state.busca_empresa = ""
-if "cliente_selecionado" not in st.session_state:
-    st.session_state.cliente_selecionado = None
+ensure_session_state(
+    {
+        "clientes_aba": "Listar",
+        "clientes_pagina": 0,
+        "clientes_busca_empresa": "",
+        "clientes_selecionado": None,
+    }
+)
 
 PAGE_SIZE = 10
 
-if st.session_state.aba == "Listar":
+if st.session_state.clientes_aba == "Listar":
     #st.subheader("Lista de Clientes")
-    busca_atual = st.text_input("Buscar por empresa", st.session_state.busca_empresa)
-    if busca_atual != st.session_state.busca_empresa:
-        st.session_state.busca_empresa = busca_atual
-        st.session_state.pagina = 0
+    busca_atual = st.text_input("Buscar por empresa", st.session_state.clientes_busca_empresa)
+    if busca_atual != st.session_state.clientes_busca_empresa:
+        st.session_state.clientes_busca_empresa = busca_atual
+        st.session_state.clientes_pagina = 0
         st.rerun()
 
-    clientes = listar_clientes(filtro_empresa=st.session_state.busca_empresa)
-    #print(st.session_state.busca_empresa)
-    ##print(f"Clientes encontrados: {len(clientes)}")
+    clientes = listar_clientes(filtro_empresa=st.session_state.clientes_busca_empresa)
 
     total = len(clientes)
     total = 10
-    inicio = st.session_state.pagina * PAGE_SIZE
+    inicio = st.session_state.clientes_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
     st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
 
@@ -65,7 +64,7 @@ if st.session_state.aba == "Listar":
                 "telefone": st.column_config.TextColumn("Telefone"),
                 "contato": st.column_config.TextColumn("Contato"),
             },
-            key="grid_clientes"
+            key="clientes_grid_clientes"
         )
 
         # Lógica de Seleção
@@ -79,11 +78,9 @@ if st.session_state.aba == "Listar":
 
                 cliente_completo = next((c for c in listar_todos_dados_clientes() if c["id"] == id_selecionado), None)
                 if cliente_completo:
-                    st.session_state.cliente_selecionado = cliente_completo
+                    st.session_state.clientes_selecionado = cliente_completo
         elif len(selecionados) > 1:
             st.error("Selecione apenas 1 cliente por vez.")
-        else:
-            st.session_state.cliente_selecionado = None
 
     # Controles de Navegação (Estilo proposta.py)
     col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
@@ -91,37 +88,37 @@ if st.session_state.aba == "Listar":
     total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     # Ajuste para base 1 na visualização, mas mantendo base 0 no estado se preferir, 
     # ou migrando tudo para base 1.
-    # O código original usava base 0 (inicio = st.session_state.pagina * PAGE_SIZE).
+    # O código original usava base 0 (inicio = st.session_state.clientes_pagina * PAGE_SIZE).
     # O código proposta.py usa base 1. 
     # Vamos manter base 0 no backend (session_state.pagina) para minimizar impacto no resto do código, 
     # mas exibir como Base 1.
 
-    if col_pag1.button("⬅️", disabled=st.session_state.pagina <= 0):
-        st.session_state.pagina -= 1
+    if col_pag1.button("⬅️", disabled=st.session_state.clientes_pagina <= 0):
+        st.session_state.clientes_pagina -= 1
         st.rerun()
 
-    col_pag2.write(f"Página {st.session_state.pagina + 1} de {total_paginas}")
+    col_pag2.write(f"Página {st.session_state.clientes_pagina + 1} de {total_paginas}")
 
-    if col_pag3.button("➡️", disabled=(st.session_state.pagina + 1) >= total_paginas):
-        st.session_state.pagina += 1
+    if col_pag3.button("➡️", disabled=(st.session_state.clientes_pagina + 1) >= total_paginas):
+        st.session_state.clientes_pagina += 1
         st.rerun()
 
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         if col1.button("Listar"):
-            st.session_state.aba = "Listar"
+            st.session_state.clientes_aba = "Listar"
             st.rerun()
         if col2.button("Incluir"):
-            st.session_state.aba = "Incluir"
+            st.session_state.clientes_aba = "Incluir"
             st.rerun()
         if col3.button("Alterar"):
-            st.session_state.aba = "Alterar"
+            st.session_state.clientes_aba = "Alterar"
             st.rerun()
         if col4.button("Excluir"):
-            st.session_state.aba = "Excluir"
+            st.session_state.clientes_aba = "Excluir"
             st.rerun()
 
-elif st.session_state.aba == "Incluir":
+elif st.session_state.clientes_aba == "Incluir":
     st.subheader("🏢 Incluir Novo Cliente")
     with st.form("form_incluir", clear_on_submit=False):
         st.markdown("### Dados da Empresa")
@@ -197,17 +194,16 @@ elif st.session_state.aba == "Incluir":
                 st.success("Cliente incluído com sucesso!")
             except ValueError as e:
                 st.error(str(e))
-            st.session_state.aba = "Listar"
+            st.session_state.clientes_aba = "Listar"
             st.rerun()
         if voltar_inc:
-                # print('Voltar sem incluir')
-                st.session_state.aba = "Listar"
+                st.session_state.clientes_aba = "Listar"
                 st.rerun()        
 
-elif st.session_state.aba == "Alterar":
+elif st.session_state.clientes_aba == "Alterar":
     st.subheader("✏️ Alterar Cliente")
     clientes = listar_todos_dados_clientes()
-    cliente = st.session_state.cliente_selecionado or (clientes[0] if clientes else None)
+    cliente = st.session_state.clientes_selecionado or (clientes[0] if clientes else None)
 
     if cliente:
         with st.form("form_alterar"):
@@ -306,7 +302,7 @@ elif st.session_state.aba == "Alterar":
                 try:
                     alterar_cliente(cliente["id"], dados)
                     st.success("Cliente alterado com sucesso!")
-                    st.session_state.aba = "Listar"
+                    st.session_state.clientes_aba = "Listar"
                     st.rerun()
 
                 except ValueError as e:
@@ -314,13 +310,13 @@ elif st.session_state.aba == "Alterar":
                     st.error(str(e))
 
             if voltar_alter:
-                st.session_state.aba = "Listar"
+                st.session_state.clientes_aba = "Listar"
                 st.rerun()        
 
-elif st.session_state.aba == "Excluir":
+elif st.session_state.clientes_aba == "Excluir":
     st.subheader("Excluir Cliente")
     clientes = listar_clientes()
-    cliente = st.session_state.cliente_selecionado or (clientes[0] if clientes else None)
+    cliente = st.session_state.clientes_selecionado or (clientes[0] if clientes else None)
 
     if cliente:
         texto1 = "Deseja realmente excluir o cliente: "
@@ -331,10 +327,10 @@ elif st.session_state.aba == "Excluir":
             if st.button("Excluir Cliente"):
                 excluir_cliente(cliente["id"])
                 st.success("Cliente excluído com sucesso!")
-                st.session_state.cliente_selecionado = None
-                st.session_state.aba = "Listar"
+                st.session_state.clientes_selecionado = None
+                st.session_state.clientes_aba = "Listar"
                 st.rerun()
         with col2:
             if st.button("Voltar sem excluir"):
-                st.session_state.aba = "Listar"
+                st.session_state.clientes_aba = "Listar"
                 st.rerun()

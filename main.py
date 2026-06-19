@@ -1,93 +1,72 @@
 import streamlit as st
 
-from login import show_login_page
-from theme import apply_streamlit_theme
-from crud import supabase
+from Pages.login import show_login_page
+from Pages.theme import apply_streamlit_theme
+from components.sidebar import render_app_sidebar
+from components.session_state import ensure_session_state
 
+def resetar_tela_usuario():
+    
+    estados = [
+        "area_cliente_selecionado",
+        "area_selecionada",
+        "equip_cliente_selecionado",
+        "equip_selecionada",
+        "linha_cliente_selecionado",
+        "linha_selecionada",
+        "processo_cliente_selecionado",
+        "processo_selecionado",
+        "produto_cliente_selecionado",
+        "produto_selecionado",
+        "menu_grupo",
+        "pagina",
+    ]
 
-def logout():
+    for estado in estados:
+        st.session_state.pop(estado, None)
 
-    try:
-        supabase.auth.sign_out()
-    except Exception:
-        pass
+st.set_page_config(
+    layout="wide",
+    page_title="FBJ Pharma",
+    initial_sidebar_state="expanded",
+)
 
-    # Limpa as informações do usuário mas mantém a flag que indica
-    # que a aplicação deve mostrar apenas a tela de login.
-    for chave in list(st.session_state.keys()):
-        if chave not in ("show_login_only",):
-            del st.session_state[chave]
-
-    st.session_state.show_login_only = True
-
-    st.rerun()
-
-
-st.set_page_config(layout="wide", page_title="FBJ Pharma")
-
-show_login_page()
-
-# Se a flag indicar que deve mostrar somente o login, interrompe aqui
-if st.session_state.get("show_login_only") or not st.session_state.get("user_name"):
-    st.stop()
 
 apply_streamlit_theme()
 
-with st.sidebar:
-    if st.session_state.get("user_name"):
-        st.caption(f"Usuário: {st.session_state.user_name}"
-    )
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarNavItems"],
+    [data-testid="stSidebarNavLinkContainer"],
+    [data-testid="stSidebarNavLink"],
+    [data-testid="stSidebarNavLink"] *,
+    [data-testid="stSidebarNavItems"] li {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    if st.button("🚪 Logout", use_container_width=True):
-        logout()
+ensure_session_state({"authenticated": False, "pagina_inicial": False})
+
+show_login_page()
+
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
   
 
-if st.session_state.role == "supervisor" or st.session_state.role == "admin":
-        
-    pg = st.navigation(
-        {              
-            'FBJ Pharma':[st.Page('homepage.py',  title='Home',                 icon=':material/filter_alt:')],
-            'Planejamento': [
-                            st.Page('demandas.py',  title='Demanda', icon=':material/view_timeline:'),
-                            st.Page('paradas.py',  title='Paradas Programadas', icon=':material/calendar_month:'),
-                            ],
-        'Cadastros Gerais': [
-                            st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
-                            st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
-                            st.Page('processos.py', title='Processos',        icon=':material/conveyor_belt:'),
-                            st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
-                            ],                
-            'Supervisor':   [
-                            st.Page('clientes.py',  title='Cadastro de Clientes', icon=':material/factory:'),
-                            st.Page('usuarios.py',  title='Cadastro de Usuários', icon=':material/groups:'),
-                            ],
-        'Configurações':   [
-                            st.Page('produtos.py',  title='Cadastro SKU', icon=':material/thermostat:'),
-                            st.Page('layout.py',    title='Layout',       icon=':material/format_paint:'),
-                            ],
-        }
-    )
+if not st.session_state.pagina_inicial:
+    st.session_state.pagina_inicial = True
+    st.switch_page("Pages/homepage.py")
 
-    pg.run()
-else:
-    pg = st.navigation(
-        {              
-            'FBJ Pharma':[st.Page('homepage.py',  title='Home',                 icon=':material/filter_alt:')],
-            'Planejamento': [
-                            st.Page('demandas.py',  title='Demanda', icon=':material/view_timeline:'),
-                            st.Page('paradas.py',  title='Paradas Programadas', icon=':material/calendar_month:'),
-                            ],
-        'Cadastros Gerais': [
-                            st.Page('areas.py',   title='Áreas de Produção',  icon=':material/activity_zone:'),
-                            st.Page('linhas.py',  title='Linhas de Produção', icon=':material/conveyor_belt:'),
-                            st.Page('processos.py', title='Processos',        icon=':material/conveyor_belt:'),
-                             st.Page('equipamentos.py',  title='Equipamentos', icon=':material/precision_manufacturing:'),
-                            ],                
-        'Configurações':   [
-                            st.Page('produtos.py',  title='Cadastro SKU', icon=':material/thermostat:'),
-                            st.Page('layout.py',    title='Layout',       icon=':material/format_paint:'),
-                            ],
-        }, position="sidebar"
-    )
+render_app_sidebar()
 
-    pg.run()
+
+
+
+    

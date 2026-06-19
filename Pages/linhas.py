@@ -7,28 +7,36 @@ import os
 import pandas as pd
 import streamlit.components.v1 as components
 
-from crud import listar_clientes, listar_todos_dados_clientes
-from crud import listar_linhas, listar_todos_dados_linhas, incluir_linha, alterar_linha, excluir_linha
+from Pages.crud import listar_clientes
+from Pages.crud import listar_linhas, listar_todos_dados_linhas, incluir_linha, alterar_linha, excluir_linha
+
+from components.top_menu import render_top_menu
+from components.sidebar import render_app_sidebar
+from components.session_state import ensure_session_state
+
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
+render_app_sidebar()
+    
+render_top_menu()
+
 st.info(f'# Cadastro de Linhas de Produção',icon=':material/conveyor_belt:')
 
-if "linha_aba" not in st.session_state:
-    st.session_state.linha_aba = "Listar"
+ensure_session_state(
+    {
+        "linha_aba": "Listar",
+        "linha_pagina": 0,
+        "linha_busca_descricao": "",
+        "linha_selecionada": None,
+        "linha_cliente_selecionado": None,
+        "linha_cliente_pagina": 0,
+    }
+)
 
-if "linha_pagina" not in st.session_state:
-    st.session_state.linha_pagina = 0
-
-if "linha_busca_descricao" not in st.session_state:
-    st.session_state.linha_busca_descricao = ""
-
-if "linha_selecionada" not in st.session_state:
-    st.session_state.linha_selecionada = None
-
-if "linha_cliente_selecionado" not in st.session_state:
-    st.session_state.linha_cliente_selecionado = None
-
-if "linha_cliente_pagina" not in st.session_state:
-    st.session_state.linha_cliente_pagina = 0
-
+if (st.session_state.get("role") not in ["admin", "supervisor"]):
+   if (st.session_state.linha_cliente_selecionado is None and st.session_state.get("cliente")):
+        st.session_state.linha_cliente_selecionado = st.session_state.cliente
 
 PAGE_SIZE = 10
 
@@ -41,11 +49,8 @@ if st.session_state.linha_aba == "Listar":
         st.session_state.linha_pagina = 0
         st.rerun()
 
-    #print("st.session_state.linha_cliente_selecionado:", st.session_state.linha_cliente_selecionado)
     if st.session_state.linha_cliente_selecionado is None: 
         # Admin e Supervisor escolhem a empresa
-
-        #print("st.session_state.get('role'):", st.session_state.get("role"))
         if st.session_state.get("role") in ["admin", "supervisor"]:                                       
             clientes = listar_clientes(filtro_empresa=st.session_state.linha_busca_descricao)
             total = len(clientes)
@@ -70,19 +75,17 @@ if st.session_state.linha_aba == "Listar":
                         "telefone": st.column_config.TextColumn("Telefone"),
                         "contato": st.column_config.TextColumn("Contato"),
                     },
-                    key="grid_clientes"
+                    key="linhas_grid_clientes"
                 )
 
                 selecionados_cli = selecao_cli[selecao_cli["Selecionar"] == True]
+                
                 if len(selecionados_cli) == 1:
                     idx = selecionados_cli.index[0]
                     if idx < len(clientes_paginados):
-                        id_selecionado = clientes_paginados[idx].get("id") or clientes_paginados[idx].get("id_cliente")
-                        cliente_completo = next((c for c in listar_todos_dados_clientes() if (c.get("id") == id_selecionado or c.get("id_cliente") == id_selecionado)), None)
-                        if cliente_completo:
-                            st.session_state.linha_cliente_selecionado = cliente_completo
-                            st.session_state.linha_pagina = 0
-                            st.rerun()
+                        st.session_state.linha_cliente_selecionado = (clientes_paginados[idx])
+                        st.session_state.linha_pagina = 0
+                        st.rerun()
                 elif len(selecionados_cli) > 1:
                     st.error("Selecione apenas 1 cliente por vez.")
 
@@ -99,14 +102,14 @@ if st.session_state.linha_aba == "Listar":
 
             # Não mostrar botões de ação antes da seleção do cliente
             st.stop()
-       # Gerente e Funcionário usam automaticamente sua empresa
         else:
-            cliente_completo = next((c for c in listar_todos_dados_clientes()
-                    if c.get("id") == st.session_state.get("cliente_id")), None)
-
-            if cliente_completo:
-                st.session_state.linha_cliente_selecionado = (cliente_completo)
+            # Gerente e Funcionário usam automaticamente sua empresa
+            if st.session_state.get("cliente"):
+                st.session_state.linha_cliente_selecionado = (st.session_state.cliente)
                 st.rerun()
+            else:
+                st.error("Empresa do usuário não encontrada.")
+                st.stop()
 
     # Se chegou aqui, há um cliente selecionado: mostrar Linhas apenas deste cliente
     cliente = st.session_state.linha_cliente_selecionado
@@ -116,7 +119,10 @@ if st.session_state.linha_aba == "Listar":
             st.session_state.linha_cliente_selecionado = None
             st.rerun()
 
-    linhas = listar_linhas(cliente.get('id') or cliente.get('id_cliente'))
+    if cliente:
+        linhas = listar_linhas(cliente.get('id') or cliente.get('id_cliente'))
+    else:
+        linhas = []    
     total = len(linhas)
     inicio = st.session_state.linha_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
@@ -148,7 +154,7 @@ if st.session_state.linha_aba == "Listar":
                     "Responsável"
                 )
             },
-            key="grid_linhas"
+            key="linhas_grid_linhas"
         )
 
         # Lógica de Seleção
@@ -165,8 +171,6 @@ if st.session_state.linha_aba == "Listar":
                     st.session_state.linha_selecionada = linha_completa
         elif len(selecionados) > 1:
             st.error("Selecione apenas 1 linha por vez.")
-        else:
-            st.session_state.linha_selecionada = None
 
     col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
     

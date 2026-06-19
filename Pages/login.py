@@ -1,20 +1,56 @@
 import streamlit as st
 
 from core.database import get_supabase_client
-from theme import read_streamlit_theme
+from Pages.theme import read_streamlit_theme
+from components.session_state import ensure_session_state
 
 
 def initialize_login_state():
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if "user" not in st.session_state:
-        st.session_state.user = None
-    if "user_name" not in st.session_state:
-        st.session_state.user_name = None
-    if "show_login_only" not in st.session_state:
-        # Por padrão, mostrar apenas a tela de login na primeira entrada
-        st.session_state.show_login_only = True
+    ensure_session_state(
+        {
+            "authenticated": False,
+            "user": None,
+            "user_name": None,
+        }
+    )
 
+
+def resetar_tela_usuario():
+    
+    estados = [
+        "area_cliente_selecionado",
+        "area_selecionada",
+        "equip_cliente_selecionado",
+        "equip_selecionada",
+        "linha_cliente_selecionado",
+        "linha_selecionada",
+        "processo_cliente_selecionado",
+        "processo_selecionado",
+        "produto_cliente_selecionado",
+        "produto_selecionado",
+        "menu_grupo",
+        "pagina",
+    ]
+
+    for estado in estados:
+        st.session_state.pop(estado, None)        
+
+# def limpar_sessao_completa():
+
+#     # Remove todos os dados da sessão Streamlit
+#     for chave in list(st.session_state.keys()):
+#         del st.session_state[chave]
+
+#     # Limpa caches Streamlit
+#     try:
+#         st.cache_data.clear()
+#     except:
+#         pass
+
+#     try:
+#         st.cache_resource.clear()
+#     except:
+#         pass
 
 def get_login_card_background():
     theme_colors = read_streamlit_theme()
@@ -128,7 +164,7 @@ def show_login_page():
                 type="password",
                 #placeholder="Digite sua senha",
                 value = '123456'
-                #value = 'fab1234'
+                # value = 'fab1234'
             )
 
             submitted = st.form_submit_button("Entrar")
@@ -159,9 +195,6 @@ def authenticate_user(username: str, password: str):
 
         error = getattr(response, "error", None)
 
-        # print("Resposta da autenticação:", response)
-        # print("Erro da autenticação:", error)
-        
         if isinstance(response, dict) and error is None:
             error = response.get("error")
 
@@ -189,35 +222,23 @@ def handle_successful_auth(session, username: str):
     refresh_token = None
     user_obj = None
 
+
     if isinstance(session, dict):
         access_token = session.get("access_token")
         refresh_token = session.get("refresh_token")
         user_obj = session.get("user")
-        # print("Sessão (dict):", session)
     else:
         access_token = getattr(session, "access_token", None)
         refresh_token = getattr(session, "refresh_token", None)
         user_obj = getattr(session, "user", None)
 
-    if isinstance(user_obj, dict):
-        display_name = (
-            user_obj.get("user_metadata", {})
-            .get("display_name")
-        )
-    else:
-        display_name = (
-            getattr(user_obj, "user_metadata", {})
-            .get("display_name")
-            if getattr(user_obj, "user_metadata", None)
-            else None
-        )
-
-
-
+  
     if access_token and refresh_token:
         supabase_client = get_supabase_client()
         supabase_client.auth.set_session(access_token, refresh_token)
 
+    
+    resetar_tela_usuario()
     st.session_state.authenticated = True
     st.session_state.user = username
 
@@ -258,27 +279,32 @@ def handle_successful_auth(session, username: str):
         .execute()
     )
 
+    # Valores padrão 
+    st.session_state.role = "" 
+    st.session_state.cliente_id = None 
+    st.session_state.empresa = "FBJ Pharma" 
+    st.session_state.cliente = None
+
+
     if perfil.data:
-        # print("Perfil encontrado:", perfil.data)
         st.session_state.role = perfil.data["role"]
         st.session_state.cliente_id = perfil.data["cliente_id"]
-        st.session_state.empresa = ""
-
+        # Busca os dados completos da empresa 
         if st.session_state.cliente_id:
             cliente = (
                 supabase_client
                 .table("clientes")
-                .select("empresa")
+                .select("*")
                 .eq("id", st.session_state.cliente_id)
                 .single()
                 .execute()
             )
             if cliente.data:
-                st.session_state.empresa = cliente.data["empresa"]
-        # print("ROLE:", st.session_state.role)
-        # print("CLIENTE_ID:", st.session_state.cliente_id)
-
+                st.session_state.cliente = cliente.data
+                if cliente.data['empresa'] == None:
+                    st.session_state.empresa = 'FBJ Pharma'
+                else:
+                    st.session_state.empresa = cliente.data.get("empresa","")
+                
     # Após autenticação bem sucedida, liberar a exibição da navegação
-    st.session_state.show_login_only = False
-
     st.rerun()

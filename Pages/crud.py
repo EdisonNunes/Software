@@ -275,13 +275,11 @@ def listar_clientes(filtro_empresa=""):
         query = query.filter("empresa", "ilike", f"%{filtro_empresa}%")
     query = query.order("empresa", desc=False)
     response = query.execute()
-    # print(response.data)
     return response.data
 
 def listar_todos_dados_clientes():
     query = supabase.table("clientes").select("*").order("empresa", desc=False)
     response = query.execute()
-    # print(response.data)
     return response.data
 def incluir_cliente(dados):
     existe = supabase.table("clientes").select("*") \
@@ -317,8 +315,6 @@ def excluir_cliente(id):
 # ) TABLESPACE pg_default;
 # ####################################################    
 def listar_produtos(filtro_produto=""):
-    # print("Filtro de produto recebido:", filtro_produto)
-
     query = supabase.table("produtos").select("id, codigo, descricao, familia, area_produtiva, area_embalagem, lote_padrao, area_rota, equipamento, tempo_ciclo")
     
     # Apenas Admin/Supervisor terão acesso a outras empresas,
@@ -328,13 +324,11 @@ def listar_produtos(filtro_produto=""):
         query = query.filter("cliente_id", "eq", filtro_produto)
     query = query.order("descricao", desc=False)
     response = query.execute()
-    # print("Resposta da consulta de produtos:", response.data)
     return response.data
 
 def listar_todos_dados_produtos():
     query = supabase.table("produtos").select("*").order("descricao", desc=False)
     response = query.execute()
-    # print(response.data)
     return response.data
 
 def incluir_produto(dados):
@@ -361,7 +355,6 @@ def ComboBoxClientes():
         opcoes_combobox = [
             f"{cliente['empresa']} - {cliente['cidade']}" for cliente in clientes
         ]
-        # print(opcoes_combobox)
     else:
         st.error("Erro ao carregar os dados dos clientes.")
         clientes = []
@@ -567,7 +560,7 @@ def excluir_usuario(user_id):
 def listar_areas(cliente_id=""):
     query = (
         supabase
-        .table("processos")
+        .table("areas")
         .select(
             """
             id,
@@ -857,12 +850,6 @@ def incluir_linha(
     responsavel,
     cliente_id
 ):
-    print("Incluindo linha com dados:", {
-        "codigo": codigo,
-        "descricao": descricao,
-        "responsavel": responsavel,
-        "cliente_id": cliente_id
-    })
     response = (
         supabase
         .table("linhas")
@@ -886,12 +873,6 @@ def alterar_linha(
     descricao,
     responsavel
 ):
-    print("Alterando linha com dados:", {
-        "linha_id": linha_id,
-        "codigo": codigo,
-        "descricao": descricao,
-        "responsavel": responsavel
-    })
     response = (
         supabase
         .table("linhas")
@@ -909,7 +890,6 @@ def alterar_linha(
     return response.data
 
 def excluir_linha(linha_id):
-    print("Excluindo linha com ID:", linha_id)
     response = (
         supabase
         .table("linhas")
@@ -1058,3 +1038,43 @@ def verificar_uso_proc(area_id):
 
     except Exception:
         return False
+# ============================================================================================
+# Totais para métricas e dashboards
+def contar_clientes():
+    response = supabase.table("clientes").select("id", count="exact").execute()
+    return response.count or 0
+
+def contar_areas(cliente_id=None):
+    query = supabase.table("areas").select("id", count="exact")
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+    response = query.execute()
+    return response.count or 0
+
+def contar_linhas(cliente_id=None):
+    query = supabase.table("linhas").select("id", count="exact")
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+    response = query.execute()
+    return response.count or 0
+  
+def contar_processos(cliente_id=None):
+    query = supabase.table("processos").select("id", count="exact")
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+    response = query.execute()
+    return response.count or 0
+
+def contar_equipamentos(cliente_id=None):
+    query = supabase.table("equipamentos").select("id", count="exact")
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+    response = query.execute()
+    return response.count or 0
+
+def contar_produtos(cliente_id=None):
+    query = supabase.table("produtos").select("id", count="exact")
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+    response = query.execute()
+    return response.count or 0

@@ -102,26 +102,31 @@
 import streamlit as st
 import pandas as pd
 
-from crud import *
+from Pages.crud import listar_clientes, listar_usuarios,PERFIS_VALOR, incluir_usuario
+from Pages.crud import PERFIS_LABEL, alterar_usuario, excluir_usuario
+from components.sidebar import render_app_sidebar
+from components.top_menu import render_top_menu
+from components.session_state import ensure_session_state
+
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
+render_app_sidebar()
+render_top_menu()
 
 # =====================================================
 # SESSION STATE
 # =====================================================
 
-if "aba" not in st.session_state:
-    st.session_state.aba = "Listar"
-
-if "pagina" not in st.session_state:
-    st.session_state.pagina = 0
-
-if "cliente_pagina" not in st.session_state:
-    st.session_state.cliente_pagina = 0
-
-if "cliente_selecionado" not in st.session_state:
-    st.session_state.cliente_selecionado = None
-
-if "usuario_selecionado" not in st.session_state:
-    st.session_state.usuario_selecionado = None
+ensure_session_state(
+    {
+        "usuarios_aba": "Listar",
+        "usuarios_pagina": 0,
+        "usuarios_cliente_pagina": 0,
+        "usuarios_cliente_selecionado": None,
+        "usuarios_usuario_selecionado": None,
+    }
+)
 
 PAGE_SIZE = 10
 
@@ -129,7 +134,7 @@ PAGE_SIZE = 10
 # SELEÇÃO DA EMPRESA
 # =====================================================
 
-if st.session_state.cliente_selecionado is None:
+if st.session_state.usuarios_cliente_selecionado is None:
 
     st.subheader("Selecione a Empresa")
 
@@ -137,7 +142,7 @@ if st.session_state.cliente_selecionado is None:
 
     total = len(clientes)
 
-    inicio = st.session_state.cliente_pagina * PAGE_SIZE
+    inicio = st.session_state.usuarios_cliente_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
 
     st.write(
@@ -172,7 +177,7 @@ if st.session_state.cliente_selecionado is None:
                     "Selecionar"
                 )
             },
-            key="grid_clientes_usuarios"
+            key="usuarios_grid_clientes"
         )
 
         selecionados = selecao_cli[
@@ -187,7 +192,7 @@ if st.session_state.cliente_selecionado is None:
 
                 cliente = clientes_paginados[idx]
 
-                st.session_state.cliente_selecionado = cliente
+                st.session_state.usuarios_cliente_selecionado = cliente
 
                 st.rerun()
 
@@ -207,15 +212,15 @@ if st.session_state.cliente_selecionado is None:
     if col1.button(
         "⬅️",
         disabled=(
-            st.session_state.cliente_pagina <= 0
+            st.session_state.usuarios_cliente_pagina <= 0
         )
     ):
-        st.session_state.cliente_pagina -= 1
+        st.session_state.usuarios_cliente_pagina -= 1
         st.rerun()
 
     col2.write(
         f"Página "
-        f"{st.session_state.cliente_pagina + 1} "
+        f"{st.session_state.usuarios_cliente_pagina + 1} "
         f"de "
         f"{total_paginas}"
     )
@@ -223,11 +228,11 @@ if st.session_state.cliente_selecionado is None:
     if col3.button(
         "➡️",
         disabled=(
-            st.session_state.cliente_pagina + 1
+            st.session_state.usuarios_cliente_pagina + 1
             >= total_paginas
         )
     ):
-        st.session_state.cliente_pagina += 1
+        st.session_state.usuarios_cliente_pagina += 1
         st.rerun()
 
     st.stop()
@@ -236,7 +241,7 @@ if st.session_state.cliente_selecionado is None:
 # EMPRESA SELECIONADA
 # =====================================================
 
-cliente = st.session_state.cliente_selecionado
+cliente = st.session_state.usuarios_cliente_selecionado
 
 st.success(
     f"Empresa Selecionada: "
@@ -244,15 +249,15 @@ st.success(
 )
 
 if st.button("Trocar Empresa"):
-    st.session_state.cliente_selecionado = None
-    st.session_state.usuario_selecionado = None
+    st.session_state.usuarios_cliente_selecionado = None
+    st.session_state.usuarios_usuario_selecionado = None
     st.rerun()
 
 # =====================================================
 # LISTAR
 # =====================================================
 
-if st.session_state.aba == "Listar":
+if st.session_state.usuarios_aba == "Listar":
 
     usuarios = listar_usuarios(
         cliente["id"]
@@ -260,7 +265,7 @@ if st.session_state.aba == "Listar":
 
     total = len(usuarios)
 
-    inicio = st.session_state.pagina * PAGE_SIZE
+    inicio = st.session_state.usuarios_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
 
     st.write(
@@ -290,7 +295,7 @@ if st.session_state.aba == "Listar":
                 ]
             ],
             hide_index=True,
-            key="grid_usuarios"
+            key="usuarios_grid_usuarios"
         )
 
         selecionados = selecao[
@@ -301,7 +306,7 @@ if st.session_state.aba == "Listar":
 
             idx = selecionados.index[0]
 
-            st.session_state.usuario_selecionado = (
+            st.session_state.usuarios_usuario_selecionado = (
                 usuarios_paginados[idx]
             )
 
@@ -320,14 +325,14 @@ if st.session_state.aba == "Listar":
 
     if col1.button(
         "⬅️",
-        disabled=st.session_state.pagina <= 0
+        disabled=st.session_state.usuarios_pagina <= 0
     ):
-        st.session_state.pagina -= 1
+        st.session_state.usuarios_pagina -= 1
         st.rerun()
 
     col2.write(
         f"Página "
-        f"{st.session_state.pagina + 1} "
+        f"{st.session_state.usuarios_pagina + 1} "
         f"de "
         f"{total_paginas}"
     )
@@ -335,11 +340,11 @@ if st.session_state.aba == "Listar":
     if col3.button(
         "➡️",
         disabled=(
-            st.session_state.pagina + 1
+            st.session_state.usuarios_pagina + 1
             >= total_paginas
         )
     ):
-        st.session_state.pagina += 1
+        st.session_state.usuarios_pagina += 1
         st.rerun()
 
     col1, col2, col3, col4 = st.columns(4)
@@ -348,22 +353,22 @@ if st.session_state.aba == "Listar":
         pass
 
     if col2.button("Incluir"):
-        st.session_state.aba = "Incluir"
+        st.session_state.usuarios_aba = "Incluir"
         st.rerun()
 
     if col3.button("Alterar"):
-        st.session_state.aba = "Alterar"
+        st.session_state.usuarios_aba = "Alterar"
         st.rerun()
 
     if col4.button("Excluir"):
-        st.session_state.aba = "Excluir"
+        st.session_state.usuarios_aba = "Excluir"
         st.rerun()
 
 # =====================================================
 # INCLUIR
 # =====================================================
 
-elif st.session_state.aba == "Incluir":
+elif st.session_state.usuarios_aba == "Incluir":
 
     st.subheader("Incluir Usuário")
 
@@ -424,13 +429,13 @@ elif st.session_state.aba == "Incluir":
                 "Usuário incluído."
             )
 
-            st.session_state.aba = "Listar"
+            st.session_state.usuarios_aba = "Listar"
 
             st.rerun()
 
         if voltar:
 
-            st.session_state.aba = "Listar"
+            st.session_state.usuarios_aba = "Listar"
 
             st.rerun()
 
@@ -438,9 +443,9 @@ elif st.session_state.aba == "Incluir":
 # ALTERAR
 # =====================================================
 
-elif st.session_state.aba == "Alterar":
+elif st.session_state.usuarios_aba == "Alterar":
 
-    usuario = st.session_state.usuario_selecionado
+    usuario = st.session_state.usuarios_usuario_selecionado
 
     if usuario is None:
 
@@ -505,13 +510,13 @@ elif st.session_state.aba == "Alterar":
                     "Usuário alterado."
                 )
 
-                st.session_state.aba = "Listar"
+                st.session_state.usuarios_aba = "Listar"
 
                 st.rerun()
 
             if voltar:
 
-                st.session_state.aba = "Listar"
+                st.session_state.usuarios_aba = "Listar"
 
                 st.rerun()
 
@@ -519,9 +524,9 @@ elif st.session_state.aba == "Alterar":
 # EXCLUIR
 # =====================================================
 
-elif st.session_state.aba == "Excluir":
+elif st.session_state.usuarios_aba == "Excluir":
 
-    usuario = st.session_state.usuario_selecionado
+    usuario = st.session_state.usuarios_usuario_selecionado
 
     if usuario is None:
 
@@ -550,8 +555,8 @@ elif st.session_state.aba == "Excluir":
                 "Usuário excluído."
             )
 
-            st.session_state.usuario_selecionado = None
-            st.session_state.aba = "Listar"
+            st.session_state.usuarios_usuario_selecionado = None
+            st.session_state.usuarios_aba = "Listar"
 
             st.rerun()
 
@@ -559,6 +564,6 @@ elif st.session_state.aba == "Excluir":
             "Voltar"
         ):
 
-            st.session_state.aba = "Listar"
+            st.session_state.usuarios_aba = "Listar"
 
             st.rerun()

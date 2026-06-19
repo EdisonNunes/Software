@@ -5,7 +5,7 @@ import streamlit as st
 
 
 def read_streamlit_theme():
-    config_path = Path(__file__).resolve().parent / ".streamlit" / "config.toml"
+    config_path = Path(__file__).resolve().parents[1] / ".streamlit" / "config.toml"
     if not config_path.exists():
         return {}
     content = config_path.read_text(encoding="utf-8")
@@ -48,6 +48,14 @@ def apply_streamlit_theme():
       [data-testid='stSidebar'] {
         background-color: %(secondary)s !important;
         color: %(text)s !important;
+      }
+      [data-testid='stSidebarNav'],
+      [data-testid='stSidebarNavItems'],
+      [data-testid='stSidebarNavLinkContainer'],
+      [data-testid='stSidebarNavLink'],
+      [data-testid='stSidebarNavLink'] * {
+        display: none !important;
+        visibility: hidden !important;
       }
       [data-testid='stSidebar'] *,
       [data-testid='stSidebar'] span,
@@ -123,6 +131,16 @@ def apply_streamlit_theme():
         button[title=\"Edit this app\"] {display: none;}
         /* Esconda ícones de configurações se necessário */
         [data-testid=\"stToolbar\"] {display: none;}
+        /* Esconder menu de navegação multipage padrão do Streamlit */
+        [data-testid=\"stSidebarNav\"],
+        [data-testid=\"stSidebarNavItems\"],
+        [data-testid=\"stSidebarNavLinkContainer\"],
+        [data-testid=\"stSidebarNavLink\"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)

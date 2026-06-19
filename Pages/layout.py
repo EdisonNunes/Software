@@ -2,7 +2,12 @@ import streamlit as st
 from pathlib import Path
 import re
 
-ROOT_DIR = Path(__file__).resolve().parent
+from components.sidebar import render_app_sidebar
+from components.top_menu import render_top_menu
+from Pages.theme import apply_streamlit_theme
+
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 CONFIG_FILE = ROOT_DIR / ".streamlit" / "config.toml"
 
 THEME_OPTIONS = [
@@ -97,14 +102,15 @@ def find_preset_for_theme(theme: dict) -> str:
 
 def read_theme_selection():
     theme = read_theme_config()
+    preset = find_preset_for_theme(theme)
+    if preset:
+        return preset
+
     if theme["base"] == "light":
         return "Light"
     if theme["base"] == "dark":
         return "Dark"
     if theme["base"] == "custom":
-        preset = find_preset_for_theme(theme)
-        if preset:
-            return preset
         if theme["backgroundColor"]:
             hex_value = theme["backgroundColor"].lstrip("#")
             if len(hex_value) == 3:
@@ -130,10 +136,16 @@ def choose_text_color(background_hex: str) -> str:
     return "#000000" if brightness > 128 else "#FFFFFF"
 
 
-st.title("Layout")
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
+apply_streamlit_theme()
+render_app_sidebar()
+render_top_menu()
+
+st.info("# Layout", icon=":material/format_paint:")
 
 current_theme = read_theme_selection()
-config = read_theme_config()
 
 selected_theme = st.radio(
     "Escolha o tema de layout",
@@ -217,10 +229,11 @@ preview_md = f"""
 """
 st.markdown(preview_md, unsafe_allow_html=True)
 
-if st.button("Salvar"):
+if st.button("Salvar", key="layout_salvar_tema"):
     if selected_theme in THEME_PRESETS:
         write_theme_section(theme_values)
-        st.success(f"Tema {selected_theme} salvo em .streamlit/config.toml. Atualize a página para aplicar.")
+        apply_streamlit_theme()
+        st.success(f"Tema {selected_theme} salvo e aplicado.")
     else:
         write_theme_section({
             "base": theme_values["base"],
@@ -229,7 +242,8 @@ if st.button("Salvar"):
             "primaryColor": None,
             "textColor": None,
         })
-        st.success(f"Tema {selected_theme} salvo em .streamlit/config.toml. Atualize a página para aplicar.")
+        apply_streamlit_theme()
+        st.success(f"Tema {selected_theme} salvo e aplicado.")
 
 st.write("\nConfiguração atual :")
 st.code(CONFIG_FILE.read_text(encoding="utf-8") if CONFIG_FILE.exists() else "(arquivo não existe)")

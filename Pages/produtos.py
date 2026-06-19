@@ -4,22 +4,32 @@ import os
 import pandas as pd
 import streamlit.components.v1 as components
 
-# from crud import supabase, listar_servicos,listar_todos_dados_servicos,incluir_servico,alterar_servico,excluir_servico, verificar_uso_servico
-from crud import *
+from Pages.crud import supabase, listar_clientes, listar_todos_dados_clientes, listar_produtos, listar_todos_dados_produtos, incluir_produto, alterar_produto, excluir_produto
+from Pages.crud import listar_todos_dados_areas, listar_todos_dados_equipamentos
+
+from components.top_menu import render_top_menu
+from components.sidebar import render_app_sidebar
+from components.session_state import ensure_session_state
+
+if not st.session_state.get("authenticated", False):
+    st.stop()
+
+render_app_sidebar()
+
+render_top_menu()
+
 st.info(f'### Produtos Cadastrados',icon=':material/thermostat:')
 
-if "sku_aba" not in st.session_state:
-    st.session_state.sku_aba = "Listar"
-if "sku_pagina" not in st.session_state:
-    st.session_state.sku_pagina = 0
-if "sku_busca_descricao" not in st.session_state:
-    st.session_state.sku_busca_descricao = ""
-if "sku_selecionado" not in st.session_state:
-    st.session_state.sku_selecionado = None
-if "sku_cliente_selecionado" not in st.session_state:
-    st.session_state.sku_cliente_selecionado = None
-if "sku_cliente_pagina" not in st.session_state:
-    st.session_state.sku_cliente_pagina = 0
+ensure_session_state(
+    {
+        "sku_aba": "Listar",
+        "sku_pagina": 0,
+        "sku_busca_descricao": "",
+        "sku_selecionado": None,
+        "sku_cliente_selecionado": None,
+        "sku_cliente_pagina": 0,
+    }
+)
 
 
 PAGE_SIZE = 10
@@ -60,7 +70,7 @@ if st.session_state.sku_aba == "Listar":
                         "telefone": st.column_config.TextColumn("Telefone"),
                         "contato": st.column_config.TextColumn("Contato"),
                     },
-                    key="grid_clientes"
+                    key="produtos_grid_clientes"
                 )
 
                 selecionados_cli = selecao_cli[selecao_cli["Selecionar"] == True]
@@ -132,7 +142,7 @@ if st.session_state.sku_aba == "Listar":
                 "area_produtiva": st.column_config.TextColumn("Área Produtiva"),
                 "tempo_ciclo": st.column_config.NumberColumn("Tempo de Ciclo", format="%.2f"),
             },
-            key="grid_produtos"
+            key="produtos_grid_produtos"
         )
 
         # Lógica de Seleção
@@ -149,8 +159,6 @@ if st.session_state.sku_aba == "Listar":
                     st.session_state.sku_selecionado = produto_completo
         elif len(selecionados) > 1:
             st.error("Selecione apenas 1 produto por vez.")
-        else:
-            st.session_state.sku_selecionado = None
 
     col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
     
