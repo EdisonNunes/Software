@@ -1,4 +1,4 @@
-import re
+﻿import re
 from pathlib import Path
 
 import streamlit as st
@@ -144,3 +144,4 @@ def apply_streamlit_theme():
         </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+

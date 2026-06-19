@@ -1,6 +1,6 @@
-import streamlit as st
+﻿import streamlit as st
 
-from Pages.crud import supabase
+from pages.crud import supabase
 
 
 def _logout():
@@ -30,3 +30,4 @@ def render_app_sidebar():
 
         if st.button("🚪 Logout", use_container_width=True, key="sb_logout"):
             _logout()
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Sistema de logging estruturado para SA Solutions.
 
 Fornece logging consistente em toda a aplicação com níveis apropriados.
@@ -46,3 +46,4 @@ class LoggerManager:
             cls._loggers[name] = logger
         
         return cls._loggers[name]
+

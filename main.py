@@ -1,7 +1,7 @@
-import streamlit as st
+﻿import streamlit as st
 
-from Pages.login import show_login_page
-from Pages.theme import apply_streamlit_theme
+from pages.login import show_login_page
+from pages.theme import apply_streamlit_theme
 from components.sidebar import render_app_sidebar
 from components.session_state import ensure_session_state
 
@@ -62,7 +62,7 @@ if not st.session_state.get("authenticated", False):
 
 if not st.session_state.pagina_inicial:
     st.session_state.pagina_inicial = True
-    st.switch_page("Pages/homepage.py")
+    st.switch_page("pages/homepage.py")
 
 render_app_sidebar()
 

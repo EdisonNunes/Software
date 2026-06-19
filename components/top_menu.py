@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 
 
 def render_top_menu():
@@ -15,7 +15,7 @@ def render_top_menu():
             use_container_width=True,
             key="tm_top_home"
         ):
-            st.switch_page("Pages/homepage.py")
+            st.switch_page("pages/homepage.py")
 
     with c2:
         if st.button(
@@ -60,7 +60,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_demanda"
             ):
-                st.switch_page("Pages/demandas.py")
+                st.switch_page("pages/demandas.py")
 
         with c2:
             if st.button(
@@ -68,7 +68,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_paradas"
             ):
-                st.switch_page("Pages/paradas.py")
+                st.switch_page("pages/paradas.py")
 
     # =====================================================
     # SUBMENU CADASTROS
@@ -84,7 +84,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_areas"
             ):
-                st.switch_page("Pages/areas.py")
+                st.switch_page("pages/areas.py")
 
         with c2:
             if st.button(
@@ -92,7 +92,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_linhas"
             ):
-                st.switch_page("Pages/linhas.py")
+                st.switch_page("pages/linhas.py")
 
         with c3:
             if st.button(
@@ -100,7 +100,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_processos"
             ):
-                st.switch_page("Pages/processos.py")
+                st.switch_page("pages/processos.py")
 
         with c4:
             if st.button(
@@ -108,7 +108,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_equipamentos"
             ):
-                st.switch_page("Pages/equipamentos.py")
+                st.switch_page("pages/equipamentos.py")
 
         with c5:
             if st.button(
@@ -116,7 +116,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_produtos"
             ):
-                st.switch_page("Pages/produtos.py")
+                st.switch_page("pages/produtos.py")
 
     # =====================================================
     # SUBMENU CONFIGURAÇÕES
@@ -132,7 +132,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_sku"
             ):
-                st.switch_page("Pages/produtos.py")
+                st.switch_page("pages/produtos.py")
 
         with c2:
             if st.button(
@@ -140,7 +140,7 @@ def render_top_menu():
                 use_container_width=True,
                 key="tm_sub_layout"
             ):
-                st.switch_page("Pages/layout.py")
+                st.switch_page("pages/layout.py")
 
         # Apenas Admin/Supervisor
         if st.session_state.get("role") in ["admin", "supervisor"]:
@@ -151,7 +151,7 @@ def render_top_menu():
                     use_container_width=True,
                     key="tm_sub_clientes"
                 ):
-                    st.switch_page("Pages/clientes.py")
+                    st.switch_page("pages/clientes.py")
 
             with c4:
                 if st.button(
@@ -159,6 +159,7 @@ def render_top_menu():
                     use_container_width=True,
                     key="tm_sub_usuarios"
                 ):
-                    st.switch_page("Pages/usuarios.py")
+                    st.switch_page("pages/usuarios.py")
 
     st.divider()
+

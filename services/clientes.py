@@ -1,4 +1,4 @@
-"""
+﻿"""
 Serviço de gerenciamento de clientes.
 
 Fornece operações CRUD para clientes com validação e tratamento de erros.
@@ -243,3 +243,4 @@ class ClienteService:
         except Exception as e:
             logger.error(f"Erro ao excluir cliente {id_cliente}: {e}")
             raise DatabaseError(f"Erro ao excluir cliente: {e}")
+

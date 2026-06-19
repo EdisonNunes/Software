@@ -1,4 +1,4 @@
-"""
+﻿"""
 Módulo core - Funcionalidades essenciais da aplicação.
 """
 
@@ -32,3 +32,4 @@ __all__ = [
     "DuplicateClienteError",
     "DuplicateServicoError",
 ]
+

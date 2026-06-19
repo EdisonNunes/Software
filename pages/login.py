@@ -1,7 +1,7 @@
-import streamlit as st
+﻿import streamlit as st
 
 from core.database import get_supabase_client
-from Pages.theme import read_streamlit_theme
+from pages.theme import read_streamlit_theme
 from components.session_state import ensure_session_state
 
 
@@ -294,3 +294,5 @@ def handle_successful_auth(session, username: str):
                 
     # Após autenticação bem sucedida, liberar a exibição da navegação
     st.rerun()
+
+

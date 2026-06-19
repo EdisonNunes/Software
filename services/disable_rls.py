@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script para desabilitar RLS na tabela clientes via SQL direto
 """
 
@@ -40,3 +40,4 @@ try:
     
 except Exception as e:
     print(f"Erro: {e}")
+

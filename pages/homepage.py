@@ -1,8 +1,8 @@
-import streamlit as st
+﻿import streamlit as st
 import streamlit.components.v1 as components
 import os
 
-from Pages.crud import contar_areas, contar_linhas, contar_processos, contar_equipamentos, contar_produtos
+from pages.crud import contar_areas, contar_linhas, contar_processos, contar_equipamentos, contar_produtos
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
 
@@ -93,7 +93,7 @@ if st.session_state.get("role") in ["admin", "supervisor", "gerente"]:
             st.markdown("**Clientes**")
 
             st.page_link(
-                "Pages/clientes.py",
+                "pages/clientes.py",
                 label="Abrir"
             )
     with c2:
@@ -103,7 +103,7 @@ if st.session_state.get("role") in ["admin", "supervisor", "gerente"]:
             st.markdown("**Usuários**")
 
             st.page_link(
-                "Pages/usuarios.py",
+                "pages/usuarios.py",
                 label="Abrir"
             )
 
@@ -123,7 +123,7 @@ with c1:
         st.markdown("### 🏭")
         st.markdown("**Áreas de Produção**")
         st.page_link(
-            "Pages/areas.py",
+            "pages/areas.py",
             label="Abrir"
         )
 
@@ -134,7 +134,7 @@ with c2:
         st.markdown("**Linhas de Produção**")
 
         st.page_link(
-            "Pages/linhas.py",
+            "pages/linhas.py",
             label="Abrir"
         )
 with c3:
@@ -144,7 +144,7 @@ with c3:
         st.markdown("**Processos**")
 
         st.page_link(
-            "Pages/processos.py",
+            "pages/processos.py",
             label="Abrir"
         )
 with c4:
@@ -154,7 +154,7 @@ with c4:
         st.markdown("**Equipamentos**")
 
         st.page_link(
-            "Pages/equipamentos.py",
+            "pages/equipamentos.py",
             label="Abrir"
         )
 
@@ -168,7 +168,7 @@ with c1:
         st.markdown("**Produtos (SKU)**")
 
         st.page_link(
-            "Pages/produtos.py",
+            "pages/produtos.py",
             label="Abrir"
         )
 with c2:
@@ -178,7 +178,7 @@ with c2:
         st.markdown("**Demandas**")
 
         st.page_link(
-            "Pages/demandas.py",
+            "pages/demandas.py",
             label="Abrir"
         )        
 with c3:
@@ -189,7 +189,7 @@ with c3:
         st.markdown("**Paradas Programadas**")
 
         st.page_link(
-            "Pages/paradas.py",
+            "pages/paradas.py",
             label="Abrir"
         )
 
@@ -199,7 +199,7 @@ with c4:
         st.markdown("### 🎨")
         st.markdown("**Layout Industrial**")
         st.page_link(
-            "Pages/layout.py",
+            "pages/layout.py",
             label="Abrir"
         )
 
@@ -240,3 +240,5 @@ with c5:
         "📦 Produtos",
         total_produtos
     )
+
+

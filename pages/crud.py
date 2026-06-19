@@ -1,4 +1,4 @@
-"""
+﻿"""
 Módulo CRUD - Compatibilidade com código legado.
 
 Este módulo mantém compatibilidade com o código existente
@@ -1078,3 +1078,4 @@ def contar_produtos(cliente_id=None):
         query = query.eq("cliente_id", cliente_id)
     response = query.execute()
     return response.count or 0
+

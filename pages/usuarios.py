@@ -1,4 +1,4 @@
-# create table auth.users (
+﻿# create table auth.users (
 #   instance_id uuid null,
 #   id uuid not null,
 #   aud character varying(255) null,
@@ -102,8 +102,8 @@
 import streamlit as st
 import pandas as pd
 
-from Pages.crud import listar_clientes, listar_usuarios,PERFIS_VALOR, incluir_usuario
-from Pages.crud import PERFIS_LABEL, alterar_usuario, excluir_usuario
+from pages.crud import listar_clientes, listar_usuarios,PERFIS_VALOR, incluir_usuario
+from pages.crud import PERFIS_LABEL, alterar_usuario, excluir_usuario
 from components.sidebar import render_app_sidebar
 from components.top_menu import render_top_menu
 from components.session_state import ensure_session_state
@@ -567,3 +567,4 @@ elif st.session_state.usuarios_aba == "Excluir":
             st.session_state.usuarios_aba = "Listar"
 
             st.rerun()
+

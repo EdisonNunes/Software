@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configurações centralizadas do projeto SA Solutions.
 
 Este módulo centraliza todas as configurações da aplicação incluindo
@@ -90,3 +90,4 @@ class Settings:
 
 # Instância global de settings
 settings = Settings()
+

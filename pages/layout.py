@@ -1,10 +1,10 @@
-import streamlit as st
+﻿import streamlit as st
 from pathlib import Path
 import re
 
 from components.sidebar import render_app_sidebar
 from components.top_menu import render_top_menu
-from Pages.theme import apply_streamlit_theme
+from pages.theme import apply_streamlit_theme
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -247,3 +247,5 @@ if st.button("Salvar", key="layout_salvar_tema"):
 
 st.write("\nConfiguração atual :")
 st.code(CONFIG_FILE.read_text(encoding="utf-8") if CONFIG_FILE.exists() else "(arquivo não existe)")
+
+

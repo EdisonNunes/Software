@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cliente Supabase centralizado com cache.
 
 Fornece um único ponto de acesso ao banco de dados Supabase
@@ -63,3 +63,4 @@ def get_supabase_client() -> Client:
 def get_db() -> Client:
     """Alias curto para get_supabase_client."""
     return get_supabase_client()
+

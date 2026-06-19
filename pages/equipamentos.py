@@ -1,4 +1,4 @@
-# Admin e Supervisor veem tudo.
+﻿# Admin e Supervisor veem tudo.
 # Gerente e Funcionário veem apenas os Equipamentos da própria empresa
 
 import streamlit as st
@@ -7,8 +7,8 @@ import os
 import pandas as pd
 import streamlit.components.v1 as components
 
-from Pages.crud import listar_clientes
-from Pages.crud import listar_equipamentos, listar_todos_dados_equipamentos, incluir_equipamento, alterar_equipamento, excluir_equipamento
+from pages.crud import listar_clientes
+from pages.crud import listar_equipamentos, listar_todos_dados_equipamentos, incluir_equipamento, alterar_equipamento, excluir_equipamento
 
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
@@ -336,3 +336,5 @@ elif st.session_state.equip_aba == "Excluir":
 
             except Exception as e:
                 st.error(f"Erro ao excluir Equipamento: {e}")
+
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Módulo services - Serviços de negócio da aplicação.
 """
 
@@ -11,3 +11,4 @@ __all__ = [
     "ServicoService",
     "FileConversionService",
 ]
+

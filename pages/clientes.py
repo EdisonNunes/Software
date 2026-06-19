@@ -1,9 +1,9 @@
-import streamlit as st
+﻿import streamlit as st
 from supabase import create_client, Client
 import os
 import pandas as pd
 
-from Pages.crud import supabase,  listar_clientes, listar_todos_dados_clientes, incluir_cliente,excluir_cliente, alterar_cliente
+from pages.crud import supabase,  listar_clientes, listar_todos_dados_clientes, incluir_cliente,excluir_cliente, alterar_cliente
 from components.sidebar import render_app_sidebar
 from components.session_state import ensure_session_state
 
@@ -334,3 +334,5 @@ elif st.session_state.clientes_aba == "Excluir":
             if st.button("Voltar sem excluir"):
                 st.session_state.clientes_aba = "Listar"
                 st.rerun()
+
+

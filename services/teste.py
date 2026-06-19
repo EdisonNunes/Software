@@ -1,4 +1,4 @@
-from supabase import create_client, Client
+﻿from supabase import create_client, Client
 
 # Configurações de acesso do Supabase
 supabase_url= "https://nrskxiwpinpbjfzzzkht.supabase.co"
@@ -26,3 +26,4 @@ def testar_resposta():
 
 # Executa a função
 testar_resposta()
+

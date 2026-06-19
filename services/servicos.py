@@ -1,4 +1,4 @@
-"""
+﻿"""
 Serviço de gerenciamento de serviços.
 
 Fornece operações CRUD para serviços com validação e tratamento de erros.
@@ -258,3 +258,4 @@ class ServicoService:
         except Exception as e:
             logger.error(f"Erro ao verificar uso do serviço {id_servico}: {e}")
             raise DatabaseError(f"Erro ao verificar uso do serviço: {e}")
+

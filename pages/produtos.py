@@ -1,11 +1,11 @@
-import streamlit as st
+﻿import streamlit as st
 from supabase import create_client, Client
 import os
 import pandas as pd
 import streamlit.components.v1 as components
 
-from Pages.crud import supabase, listar_clientes, listar_todos_dados_clientes, listar_produtos, listar_todos_dados_produtos, incluir_produto, alterar_produto, excluir_produto
-from Pages.crud import listar_todos_dados_areas, listar_todos_dados_equipamentos
+from pages.crud import supabase, listar_clientes, listar_todos_dados_clientes, listar_produtos, listar_todos_dados_produtos, incluir_produto, alterar_produto, excluir_produto
+from pages.crud import listar_todos_dados_areas, listar_todos_dados_equipamentos
 
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
@@ -407,3 +407,4 @@ elif st.session_state.sku_aba == "Excluir":
                 st.rerun()
             except Exception as e:
                 st.error(f"Erro ao excluir produto: {e}")
+

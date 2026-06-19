@@ -1,4 +1,4 @@
-"""
+﻿"""
 INSTRUÇÕES PARA DESABILITAR RLS NA TABELA CLIENTES
 
 ⚠️  Nota: A chave 'anon' do Supabase não pode desabilitar RLS.
@@ -90,3 +90,4 @@ except KeyboardInterrupt:
     print("\n⏸️  Teste cancelado.")
 except Exception as e:
     print(f"❌ Erro: {e}")
+

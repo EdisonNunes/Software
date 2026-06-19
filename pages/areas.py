@@ -1,4 +1,4 @@
-# Admin e Supervisor veem tudo.
+﻿# Admin e Supervisor veem tudo.
 # Gerente e Funcionário veem apenas as áreas da própria empresa
 
 import streamlit as st
@@ -7,8 +7,8 @@ import os
 import pandas as pd
 import streamlit.components.v1 as components
 
-from Pages.crud import listar_clientes
-from Pages.crud import listar_areas, listar_todos_dados_areas, incluir_area, alterar_area, excluir_area
+from pages.crud import listar_clientes
+from pages.crud import listar_areas, listar_todos_dados_areas, incluir_area, alterar_area, excluir_area
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
 from components.session_state import ensure_session_state
@@ -329,3 +329,4 @@ elif st.session_state.area_aba == "Excluir":
 
             except Exception as e:
                 st.error(f"Erro ao excluir área: {e}")
+

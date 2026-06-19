@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script para debugar conectividade e dados do Supabase
 """
 
@@ -64,3 +64,4 @@ try:
 except Exception as e:
     print(f"✗ Erro geral: {e}")
     print(f"  Tipo: {type(e).__name__}")
+

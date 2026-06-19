@@ -1,4 +1,4 @@
-"""
+﻿"""
 Exceções personalizadas para SA Solutions.
 
 Define exceções específicas do domínio para tratamento de erros mais preciso.
@@ -53,3 +53,4 @@ class DuplicateClienteError(ValidationError):
 class DuplicateServicoError(ValidationError):
     """Serviço duplicado (descrição já existe)."""
     pass
+
