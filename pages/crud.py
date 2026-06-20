@@ -717,12 +717,30 @@ def listar_todos_dados_equipamentos(cliente_id=""):
 
     return response.data
 
-def incluir_equipamento(
-    codigo,
-    descricao,
-    classif,
-    cliente_id
-):
+def incluir_equipamento(*args, **kwargs):
+    # Compatibilidade com assinatura antiga e nova.
+    if kwargs:
+        codigo = kwargs.get("codigo")
+        descricao = kwargs.get("descricao")
+        classif = kwargs.get("classif")
+        linha = kwargs.get("linha")
+        processo = kwargs.get("processo")
+        capacidade = kwargs.get("capacidade")
+        unidade_capac = kwargs.get("unidade_capac")
+        unidade_tempo = kwargs.get("unidade_tempo")
+        cliente_id = kwargs.get("cliente_id")
+    else:
+        # Novo formato posicional esperado: 9 argumentos.
+        codigo = args[0] if len(args) > 0 else None
+        descricao = args[1] if len(args) > 1 else None
+        classif = args[2] if len(args) > 2 else None
+        linha = args[3] if len(args) > 3 else None
+        processo = args[4] if len(args) > 4 else None
+        capacidade = args[5] if len(args) > 5 else None
+        unidade_capac = args[6] if len(args) > 6 else None
+        unidade_tempo = args[7] if len(args) > 7 else None
+        cliente_id = args[8] if len(args) > 8 else None
+
     response = (
         supabase
         .table("equipamentos")
@@ -731,6 +749,11 @@ def incluir_equipamento(
                 "codigo": codigo,
                 "descricao": descricao,
                 "classif": classif,
+                "linha": linha,
+                "processo": processo,
+                "capacidade": capacidade,
+                "unidade_capac": unidade_capac,
+                "unidade_tempo": unidade_tempo,
                 "cliente_id": cliente_id
             }
         )
@@ -740,21 +763,54 @@ def incluir_equipamento(
     return response.data
 
 def alterar_equipamento(
-    equipamento_id,
-    codigo,
-    classif,
-    descricao
+    *args,
+    **kwargs
 ):
+    # Compatibilidade com assinatura antiga e nova.
+    if kwargs:
+        equipamento_id = kwargs.get("equipamento_id") or kwargs.get("id")
+        codigo = kwargs.get("codigo")
+        classif = kwargs.get("classif")
+        descricao = kwargs.get("descricao")
+        linha = kwargs.get("linha")
+        processo = kwargs.get("processo")
+        capacidade = kwargs.get("capacidade")
+        unidade_capac = kwargs.get("unidade_capac")
+        unidade_tempo = kwargs.get("unidade_tempo")
+    else:
+        # Formato antigo posicional: (id, codigo, classif, descricao)
+        # Formato novo posicional: (id, codigo, classif, descricao, linha, processo, capacidade, unidade_capac, unidade_tempo)
+        equipamento_id = args[0] if len(args) > 0 else None
+        codigo = args[1] if len(args) > 1 else None
+        classif = args[2] if len(args) > 2 else None
+        descricao = args[3] if len(args) > 3 else None
+        linha = args[4] if len(args) > 4 else None
+        processo = args[5] if len(args) > 5 else None
+        capacidade = args[6] if len(args) > 6 else None
+        unidade_capac = args[7] if len(args) > 7 else None
+        unidade_tempo = args[8] if len(args) > 8 else None
+
+    payload = {
+        "codigo": codigo,
+        "descricao": descricao,
+        "classif": classif,
+    }
+
+    if linha is not None:
+        payload["linha"] = linha
+    if processo is not None:
+        payload["processo"] = processo
+    if capacidade is not None:
+        payload["capacidade"] = capacidade
+    if unidade_capac is not None:
+        payload["unidade_capac"] = unidade_capac
+    if unidade_tempo is not None:
+        payload["unidade_tempo"] = unidade_tempo
+
     response = (
         supabase
         .table("equipamentos")
-        .update(
-            {
-                "codigo": codigo,
-                "descricao": descricao,
-                "classif": classif
-            }
-        )
+        .update(payload)
         .eq("id", equipamento_id)
         .execute()
     )

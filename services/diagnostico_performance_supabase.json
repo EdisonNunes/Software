@@ -1,0 +1,77 @@
+[
+  {
+    "QUERY PLAN": "Limit  (cost=14.46..14.47 rows=1 width=80) (actual time=0.016..0.016 rows=0 loops=1)"
+  },
+  {
+    "QUERY PLAN": "  Output: produtos.id, produtos.codigo, produtos.descricao"
+  },
+  {
+    "QUERY PLAN": "  Buffers: shared hit=1"
+  },
+  {
+    "QUERY PLAN": "  CTE params"
+  },
+  {
+    "QUERY PLAN": "    ->  Result  (cost=0.00..0.01 rows=1 width=48) (actual time=0.000..0.001 rows=1 loops=1)"
+  },
+  {
+    "QUERY PLAN": "          Output: '00000000-0000-0000-0000-000000000000'::uuid, 'a'::text"
+  },
+  {
+    "QUERY PLAN": "  InitPlan 2"
+  },
+  {
+    "QUERY PLAN": "    ->  CTE Scan on params  (cost=0.00..0.02 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=1)"
+  },
+  {
+    "QUERY PLAN": "          Output: params.cliente_id"
+  },
+  {
+    "QUERY PLAN": "  InitPlan 3"
+  },
+  {
+    "QUERY PLAN": "    ->  CTE Scan on params params_1  (cost=0.00..0.02 rows=1 width=32) (never executed)"
+  },
+  {
+    "QUERY PLAN": "          Output: params_1.termo"
+  },
+  {
+    "QUERY PLAN": "  ->  Sort  (cost=14.41..14.42 rows=1 width=80) (actual time=0.015..0.015 rows=0 loops=1)"
+  },
+  {
+    "QUERY PLAN": "        Output: produtos.id, produtos.codigo, produtos.descricao"
+  },
+  {
+    "QUERY PLAN": "        Sort Key: produtos.descricao"
+  },
+  {
+    "QUERY PLAN": "        Sort Method: quicksort  Memory: 25kB"
+  },
+  {
+    "QUERY PLAN": "        Buffers: shared hit=1"
+  },
+  {
+    "QUERY PLAN": "        ->  Seq Scan on public.produtos  (cost=0.00..14.40 rows=1 width=80) (actual time=0.012..0.012 rows=0 loops=1)"
+  },
+  {
+    "QUERY PLAN": "              Output: produtos.id, produtos.codigo, produtos.descricao"
+  },
+  {
+    "QUERY PLAN": "              Filter: ((produtos.cliente_id = (InitPlan 2).col1) AND (produtos.descricao ~~* (('%'::text || (InitPlan 3).col1) || '%'::text)))"
+  },
+  {
+    "QUERY PLAN": "              Rows Removed by Filter: 10"
+  },
+  {
+    "QUERY PLAN": "              Buffers: shared hit=1"
+  },
+  {
+    "QUERY PLAN": "Query Identifier: -2505134230579899080"
+  },
+  {
+    "QUERY PLAN": "Planning Time: 0.072 ms"
+  },
+  {
+    "QUERY PLAN": "Execution Time: 0.035 ms"
+  }
+]

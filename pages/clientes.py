@@ -111,10 +111,10 @@ if st.session_state.clientes_aba == "Listar":
         if col2.button("Incluir"):
             st.session_state.clientes_aba = "Incluir"
             st.rerun()
-        if col3.button("Alterar"):
+        if col3.button("Alterar", disabled=st.session_state.clientes_selecionado is None):
             st.session_state.clientes_aba = "Alterar"
             st.rerun()
-        if col4.button("Excluir"):
+        if col4.button("Excluir", disabled=st.session_state.clientes_selecionado is None):
             st.session_state.clientes_aba = "Excluir"
             st.rerun()
 

@@ -356,11 +356,11 @@ if st.session_state.usuarios_aba == "Listar":
         st.session_state.usuarios_aba = "Incluir"
         st.rerun()
 
-    if col3.button("Alterar"):
+    if col3.button("Alterar", disabled=st.session_state.usuarios_usuario_selecionado is None):
         st.session_state.usuarios_aba = "Alterar"
         st.rerun()
 
-    if col4.button("Excluir"):
+    if col4.button("Excluir", disabled=st.session_state.usuarios_usuario_selecionado is None):
         st.session_state.usuarios_aba = "Excluir"
         st.rerun()
 

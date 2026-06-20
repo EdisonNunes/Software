@@ -8,7 +8,15 @@ import pandas as pd
 import streamlit.components.v1 as components
 
 from pages.crud import listar_clientes
-from pages.crud import listar_equipamentos, listar_todos_dados_equipamentos, incluir_equipamento, alterar_equipamento, excluir_equipamento
+from pages.crud import (
+    listar_equipamentos,
+    listar_todos_dados_equipamentos,
+    incluir_equipamento,
+    alterar_equipamento,
+    excluir_equipamento,
+    listar_todos_dados_linhas,
+    listar_todos_dados_procs,
+)
 
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
@@ -195,10 +203,10 @@ if st.session_state.equip_aba == "Listar":
         if col2.button("Incluir"):
             st.session_state.equip_aba = "Incluir"
             st.rerun()
-        if col3.button("Alterar"):
+        if col3.button("Alterar", disabled=st.session_state.equip_selecionada is None):
             st.session_state.equip_aba = "Alterar"
             st.rerun()
-        if col4.button("Excluir"):
+        if col4.button("Excluir", disabled=st.session_state.equip_selecionada is None):
             st.session_state.equip_aba = "Excluir"
             st.rerun()
             
@@ -213,6 +221,37 @@ elif st.session_state.equip_aba == "Incluir":
             st.rerun()
     else:
         cliente = st.session_state.equip_cliente_selecionado
+        cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        linhas = listar_todos_dados_linhas(cliente_id)
+        processos = listar_todos_dados_procs(cliente_id)
+
+        if not linhas:
+            st.warning("Cadastre ao menos uma linha antes de incluir equipamento.")
+            if st.button("Ir para módulo de Linhas"):
+                st.switch_page("pages/linhas.py")
+            st.stop()
+
+        if not processos:
+            st.warning("Cadastre ao menos um processo antes de incluir equipamento.")
+            if st.button("Ir para módulo de Processos"):
+                st.switch_page("pages/processos.py")
+            st.stop()
+
+        linha_por_id = {
+            item.get("id"): item.get("descricao", "")
+            for item in linhas
+            if item.get("id")
+        }
+        processo_por_id = {
+            item.get("id"): item.get("descricao", "")
+            for item in processos
+            if item.get("id")
+        }
+        opcoes_linha = list(linha_por_id.keys())
+        opcoes_processo = list(processo_por_id.keys())
+        unidades_capac = ["kg", "litros", "unidades"]
+        unidades_tempo = ["min", "horas", "dia", "mes"]
+
         # Exibir via componente HTML para garantir que estilo seja aplicado
         html = f"""
         <style>
@@ -222,13 +261,41 @@ elif st.session_state.equip_aba == "Incluir":
         """
         components.html(html, height=60)
 
-        # Formulário aprimorado em colunas
         with st.form("form_incluir_equipamento"):
-            # Campo não editável com o cliente selecionado
-            # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
-            codigo = st.text_input("Código", max_chars=50)
-            descricao = st.text_input("Descrição", max_chars=255)
-            classif = st.selectbox("Classificação", ["Principal", "Secundário"], width=200)
+            st.markdown("#### Identificação")
+            col_id_1, col_id_2 = st.columns(2)
+            with col_id_1:
+                codigo = st.text_input("Código", max_chars=50, placeholder="Ex.: EQP-001")
+            with col_id_2:
+                classif = st.selectbox("Classificação", ["Principal", "Secundário"], width="stretch")
+
+            descricao = st.text_input("Descrição", max_chars=255, placeholder="Nome descritivo do equipamento")
+
+            st.markdown("#### Estrutura")
+            col_estr_1, col_estr_2 = st.columns(2)
+            with col_estr_1:
+                linha_id = st.selectbox(
+                    "Linha",
+                    options=opcoes_linha,
+                    format_func=lambda item_id: linha_por_id.get(item_id, ""),
+                    width="stretch",
+                )
+            with col_estr_2:
+                processo_id = st.selectbox(
+                    "Processo",
+                    options=opcoes_processo,
+                    format_func=lambda item_id: processo_por_id.get(item_id, ""),
+                    width="stretch",
+                )
+
+            st.markdown("#### Capacidade")
+            col_cap_1, col_cap_2, col_cap_3 = st.columns([2, 1, 1])
+            with col_cap_1:
+                capacidade = st.number_input("Capacidade", min_value=0.0, step=0.1, format="%.2f")
+            with col_cap_2:
+                unidade_capac = st.selectbox("Unidade", options=unidades_capac, width="stretch")
+            with col_cap_3:
+                unidade_tempo = st.selectbox("Tempo", options=unidades_tempo, width="stretch")
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -244,12 +311,18 @@ elif st.session_state.equip_aba == "Incluir":
                 st.rerun()
 
             if salvar:
-                cliente_id = (
-                                cliente.get("id")
-                                or cliente.get("id_cliente"))
-
                 try:
-                    incluir_equipamento(codigo, descricao, classif, cliente_id)
+                    incluir_equipamento(
+                        codigo=codigo,
+                        descricao=descricao,
+                        classif=classif,
+                        linha=linha_id,
+                        processo=processo_id,
+                        capacidade=capacidade,
+                        unidade_capac=unidade_capac,
+                        unidade_tempo=unidade_tempo,
+                        cliente_id=cliente_id,
+                    )
                     st.success("Equipamento incluído com sucesso!")
                     # Limpar seleção de equipamentos e voltar para listagem
                     st.session_state.equip_selecionada = None
@@ -269,18 +342,106 @@ elif st.session_state.equip_aba == "Alterar":
     else:
         equipamento = st.session_state.equip_selecionada
         cliente = st.session_state.equip_cliente_selecionado
+        cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        linhas = listar_todos_dados_linhas(cliente_id)
+        processos = listar_todos_dados_procs(cliente_id)
+
+        if not linhas or not processos:
+            st.warning("Para editar, é necessário ter ao menos uma linha e um processo cadastrados.")
+            if st.button("Voltar para lista"):
+                st.session_state.equip_aba = "Listar"
+                st.rerun()
+            st.stop()
+
+        linha_por_id = {
+            item.get("id"): item.get("descricao", "")
+            for item in linhas
+            if item.get("id")
+        }
+        processo_por_id = {
+            item.get("id"): item.get("descricao", "")
+            for item in processos
+            if item.get("id")
+        }
+        opcoes_linha = list(linha_por_id.keys())
+        opcoes_processo = list(processo_por_id.keys())
+        unidades_capac = ["kg", "litros", "unidades"]
+        unidades_tempo = ["min", "horas", "dia", "mes"]
+
+        linha_id_atual = equipamento.get("linha")
+        processo_id_atual = equipamento.get("processo")
+        if linha_id_atual not in opcoes_linha:
+            linha_id_atual = opcoes_linha[0]
+        if processo_id_atual not in opcoes_processo:
+            processo_id_atual = opcoes_processo[0]
+
+        unidade_capac_atual = equipamento.get("unidade_capac") if equipamento.get("unidade_capac") in unidades_capac else unidades_capac[0]
+        unidade_tempo_atual = equipamento.get("unidade_tempo") if equipamento.get("unidade_tempo") in unidades_tempo else unidades_tempo[0]
+        classif_atual = equipamento.get("classif") if equipamento.get("classif") in ["Principal", "Secundário"] else "Principal"
 
         # Mostrar cliente não editável
         st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
 
         # Form para alterar
         with st.form("form_alterar_equipamento"):
-            col1, col2 = st.columns([2, 1])
-            with col1:
+            st.markdown("#### Identificação")
+            col_id_1, col_id_2 = st.columns(2)
+            with col_id_1:
                 codigo = st.text_input("Código", value=equipamento.get('codigo', ''), max_chars=50)
-                descricao = st.text_input("Descrição", value=equipamento.get('descricao', ''), max_chars=255)
-                classif = st.selectbox("Classificação", ["Principal", "Secundário"], index=0 if equipamento.get('classif') == "Principal" else 1, width=200)
-                # Ações
+            with col_id_2:
+                classif = st.selectbox(
+                    "Classificação",
+                    ["Principal", "Secundário"],
+                    index=0 if classif_atual == "Principal" else 1,
+                    width="stretch",
+                )
+
+            descricao = st.text_input("Descrição", value=equipamento.get('descricao', ''), max_chars=255)
+
+            st.markdown("#### Estrutura")
+            col_estr_1, col_estr_2 = st.columns(2)
+            with col_estr_1:
+                linha_id = st.selectbox(
+                    "Linha",
+                    options=opcoes_linha,
+                    index=opcoes_linha.index(linha_id_atual),
+                    format_func=lambda item_id: linha_por_id.get(item_id, ""),
+                    width="stretch",
+                )
+            with col_estr_2:
+                processo_id = st.selectbox(
+                    "Processo",
+                    options=opcoes_processo,
+                    index=opcoes_processo.index(processo_id_atual),
+                    format_func=lambda item_id: processo_por_id.get(item_id, ""),
+                    width="stretch",
+                )
+
+            st.markdown("#### Capacidade")
+            col_cap_1, col_cap_2, col_cap_3 = st.columns([2, 1, 1])
+            with col_cap_1:
+                capacidade = st.number_input(
+                    "Capacidade",
+                    min_value=0.0,
+                    value=float(equipamento.get("capacidade") or 0.0),
+                    step=0.1,
+                    format="%.2f",
+                )
+            with col_cap_2:
+                unidade_capac = st.selectbox(
+                    "Unidade",
+                    options=unidades_capac,
+                    index=unidades_capac.index(unidade_capac_atual),
+                    width="stretch",
+                )
+            with col_cap_3:
+                unidade_tempo = st.selectbox(
+                    "Tempo",
+                    options=unidades_tempo,
+                    index=unidades_tempo.index(unidade_tempo_atual),
+                    width="stretch",
+                )
+
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:
                 salvar = st.form_submit_button("Salvar Alterações")
@@ -293,14 +454,19 @@ elif st.session_state.equip_aba == "Alterar":
                 st.rerun()
 
             if salvar:
-                cliente_id = (
-                    cliente.get("id")
-                    or cliente.get("id_cliente")
-                )
-
                 try:
                     equip_id = equipamento.get('id')
-                    alterar_equipamento(equip_id, codigo, classif, descricao)
+                    alterar_equipamento(
+                        equipamento_id=equip_id,
+                        codigo=codigo,
+                        classif=classif,
+                        descricao=descricao,
+                        linha=linha_id,
+                        processo=processo_id,
+                        capacidade=capacidade,
+                        unidade_capac=unidade_capac,
+                        unidade_tempo=unidade_tempo,
+                    )
                     st.success("Equipamento alterado com sucesso!")
                     st.session_state.equip_selecionada = None
                     st.session_state.equip_aba = "Listar"

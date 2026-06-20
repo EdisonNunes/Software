@@ -182,10 +182,10 @@ if st.session_state.sku_aba == "Listar":
         if col2.button("Incluir"):
             st.session_state.sku_aba = "Incluir"
             st.rerun()
-        if col3.button("Alterar"):
+        if col3.button("Alterar", disabled=st.session_state.sku_selecionado is None):
             st.session_state.sku_aba = "Alterar"
             st.rerun()
-        if col4.button("Excluir"):
+        if col4.button("Excluir", disabled=st.session_state.sku_selecionado is None):
             st.session_state.sku_aba = "Excluir"
 elif st.session_state.sku_aba == "Incluir":
     st.subheader("Incluir Produto")
