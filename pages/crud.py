@@ -956,22 +956,22 @@ def excluir_linha(linha_id):
 
     return response.data
 
-def verificar_uso_linha(linha_id):
-    try:
+# def verificar_uso_linha(linha_id):
+#     try:
 
-        response = (
-            supabase
-            .table("produtos")
-            .select("id")
-            .eq("linha_id", linha_id)
-            .limit(1)
-            .execute()
-        )
+#         response = (
+#             supabase
+#             .table("produtos")
+#             .select("id")
+#             .eq("linha_id", linha_id)
+#             .limit(1)
+#             .execute()
+#         )
 
-        return len(response.data) > 0
+#         return len(response.data) > 0
 
-    except Exception:
-        return False
+#     except Exception:
+#         return False
 
 # ============================================================================================
 # create table public.processos (
@@ -1078,22 +1078,22 @@ def excluir_proc(area_id):
 
     return response.data
 
-def verificar_uso_proc(area_id):
-    try:
+# def verificar_uso_proc(area_id):
+#     try:
 
-        response = (
-            supabase
-            .table("produtos")
-            .select("id")
-            .eq("area_id", area_id)
-            .limit(1)
-            .execute()
-        )
+#         response = (
+#             supabase
+#             .table("produtos")
+#             .select("id")
+#             .eq("area_id", area_id)
+#             .limit(1)
+#             .execute()
+#         )
 
-        return len(response.data) > 0
+#         return len(response.data) > 0
 
-    except Exception:
-        return False
+    # except Exception:
+    #     return False
 # ============================================================================================
 # Totais para métricas e dashboards
 def contar_clientes():
@@ -1134,4 +1134,161 @@ def contar_produtos(cliente_id=None):
         query = query.eq("cliente_id", cliente_id)
     response = query.execute()
     return response.count or 0
+
+# ============================================================================================
+# create table public.paradas (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   cliente_id uuid not null,
+#   codigo text not null,
+#   descricao text not null,
+#   categoria_oee text not null,
+#   constraint paradas_pkey primary key (id),
+#   constraint paradas_cliente_codigo_unique unique (cliente_id, codigo),
+#   constraint paradas_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE,
+#   constraint paradas_categoria_oee_check check (
+#     (
+#       categoria_oee = any (
+#         array[
+#           'Disponibilidade'::text,
+#           'Performance'::text,
+#           'Qualidade'::text
+#         ]
+#       )
+#     )
+#   ),
+#   constraint paradas_codigo_nao_vazio check (
+#     (
+#       length(
+#         TRIM(
+#           both
+#           from
+#             codigo
+#         )
+#       ) > 0
+#     )
+#   ),
+#   constraint paradas_descricao_nao_vazio check (
+#     (
+#       length(
+#         TRIM(
+#           both
+#           from
+#             descricao
+#         )
+#       ) > 0
+#     )
+#   ),
+#   constraint paradas_categoria_oee_nao_vazio check (
+#     (
+#       length(
+#         TRIM(
+#           both
+#           from
+#             categoria_oee
+#         )
+#       ) > 0
+#     )
+#   )
+# ) TABLESPACE pg_default;
+
+# create index IF not exists idx_paradas_cliente_id on public.paradas using btree (cliente_id) TABLESPACE pg_default;
+# create index IF not exists idx_paradas_codigo on public.paradas using btree (codigo) TABLESPACE pg_default;
+# create index IF not exists idx_paradas_descricao on public.paradas using btree (descricao) TABLESPACE pg_default;
+# create index IF not exists idx_paradas_categoria_oee on public.paradas using btree (categoria_oee) TABLESPACE pg_default;
+def listar_paradas(cliente_id=""):
+    query = (
+        supabase
+        .table("paradas")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            categoria_oee,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_paradas(cliente_id=""):
+    query = (
+        supabase
+        .table("paradas")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_parada(
+    codigo,
+    descricao,
+    categoria_oee,
+    cliente_id
+):
+    response = (
+        supabase
+        .table("paradas")
+        .insert(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "categoria_oee": categoria_oee,
+                "cliente_id": cliente_id
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def alterar_parada(
+    parada_id,
+    codigo,
+    descricao,
+    categoria_oee,
+):
+    response = (
+        supabase
+        .table("paradas")
+        .update(
+            {
+                "codigo": codigo,
+                "descricao": descricao,
+                "categoria_oee": categoria_oee
+            }
+        )
+        .eq("id", parada_id)
+        .execute()
+    )
+
+    return response.data
+
+def excluir_parada(parada_id):
+    response = (
+        supabase
+        .table("paradas")
+        .delete()
+        .eq("id", parada_id)
+        .execute()
+    )
+
+    return response.data
 

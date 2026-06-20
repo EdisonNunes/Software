@@ -15,7 +15,7 @@ def _logout():
 
 def render_app_sidebar():
     with st.sidebar:
-        st.image("imagens/Logo1.png", use_container_width=True)
+        st.image("imagens/Logo1.png", width="stretch")
         st.divider()
 
         st.caption(f"👤 {st.session_state.get('user_name', '')}")
@@ -28,6 +28,6 @@ def render_app_sidebar():
 
         st.divider()
 
-        if st.button("🚪 Logout", use_container_width=True, key="sb_logout"):
+        if st.button("🚪 Logout", width="stretch", key="sb_logout"):
             _logout()
 

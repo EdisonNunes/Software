@@ -179,13 +179,13 @@ elif st.session_state.clientes_aba == "Incluir":
         with col1:
             submitted = st.form_submit_button(
                 "💾 Incluir Cliente",
-                use_container_width=True
+                width="stretch"
             )
 
         with col3:
             voltar_inc = st.form_submit_button(
                 "↩️ Voltar",
-                use_container_width=True
+                width="stretch"
             )
 
         if submitted:
@@ -289,13 +289,13 @@ elif st.session_state.clientes_aba == "Alterar":
             with col1:
                 submitted_alter = st.form_submit_button(
                     "💾 Salvar Alterações",
-                    use_container_width=True
+                    width="stretch"
                 )
 
             with col3:
                 voltar_alter = st.form_submit_button(
                     "↩️ Voltar",
-                    use_container_width=True
+                    width="stretch"
                 )
 
             if submitted_alter:
