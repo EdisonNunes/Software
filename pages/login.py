@@ -11,6 +11,7 @@ def initialize_login_state():
             "authenticated": False,
             "user": None,
             "user_name": None,
+            "acesso_suspenso": False,
         }
     )
 
@@ -291,6 +292,11 @@ def handle_successful_auth(session, username: str):
                     st.session_state.empresa = 'FBJ Pharma'
                 else:
                     st.session_state.empresa = cliente.data.get("empresa","")
+                # Verifica se o acesso do cliente está suspenso
+                if cliente.data.get("status") == False:
+                    st.session_state.acesso_suspenso = True
+                else:
+                    st.session_state.acesso_suspenso = False
                 
     # Após autenticação bem sucedida, liberar a exibição da navegação
     st.rerun()

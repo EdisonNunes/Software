@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit.components.v1 as components
 
 from pages.crud import listar_clientes
-from pages.crud import listar_paradas, listar_todos_dados_paradas, incluir_parada, alterar_parada, excluir_parada
+from pages.crud import listar_paradas, listar_todos_dados_paradas, incluir_parada, alterar_parada, desativar_parada, reativar_parada
 
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
@@ -135,7 +135,10 @@ if st.session_state.parada_aba == "Listar":
         # df_exibicao["id_produto"] = df_exibicao["id_produto"].astype(str)
 
         # Colunas e Configuração
-        cols_exibicao = ["Selecionar", "codigo", "descricao", "categoria_oee"]
+        df_exibicao["situacao"] = df_exibicao["ativo"].apply(
+            lambda v: "🟢 Ativa" if v else "🔴 Inativa"
+        )
+        cols_exibicao = ["Selecionar", "codigo", "descricao", "categoria_oee", "situacao"]
         
         selecao = st.data_editor(
             df_exibicao[cols_exibicao].reset_index(drop=True),
@@ -152,7 +155,10 @@ if st.session_state.parada_aba == "Listar":
                 ),
                 "categoria_oee": st.column_config.TextColumn(
                     "Categoria OEE"
-                )
+                ),
+                "situacao": st.column_config.TextColumn(
+                    "Situação"
+                ),
             },
             key="paradas_grid_paradas"
         )
@@ -197,9 +203,28 @@ if st.session_state.parada_aba == "Listar":
         if col3.button("Alterar", disabled=st.session_state.parada_selecionada is None):
             st.session_state.parada_aba = "Alterar"
             st.rerun()
-        if col4.button("Excluir", disabled=st.session_state.parada_selecionada is None):
-            st.session_state.parada_aba = "Excluir"
-            st.rerun()
+
+        parada_sel = st.session_state.parada_selecionada
+        if parada_sel is None:
+            col4.button("🔒 Desativar", disabled=True)
+        elif parada_sel.get("ativo", True):
+            if col4.button("🔒 Desativar"):
+                try:
+                    desativar_parada(parada_sel.get("id"))
+                    st.session_state.parada_selecionada = None
+                    st.success("Parada desativada com sucesso.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao desativar parada: {e}")
+        else:
+            if col4.button("🔓 Reativar"):
+                try:
+                    reativar_parada(parada_sel.get("id"))
+                    st.session_state.parada_selecionada = None
+                    st.success("Parada reativada com sucesso.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao reativar parada: {e}")
             
 elif st.session_state.parada_aba == "Incluir":
     st.subheader("Incluir parada")
@@ -292,7 +317,7 @@ elif st.session_state.parada_aba == "Alterar":
                 # Ações
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:
-                salvar = st.form_submit_button("Salvar Alterações")
+                salvar = st.form_submit_button("Salvar")
             with btn_col2:
                 cancelar = st.form_submit_button("Cancelar")
 
@@ -317,32 +342,5 @@ elif st.session_state.parada_aba == "Alterar":
                 except Exception as e:
                     st.error(f"Erro ao alterar Parada: {e}")
 
-elif st.session_state.parada_aba == "Excluir":
-    st.subheader("Excluir Parada")
 
-    if st.session_state.parada_selecionada is None:
-        st.warning("Selecione uma parada na lista antes de excluir.")
-        if st.button("Voltar para lista"):
-            st.session_state.parada_aba = "Listar"
-            st.rerun()
-    else:
-        parada = st.session_state.parada_selecionada
-        st.markdown(f"**Parada selecionada:** {parada.get('descricao')} ({parada.get('codigo')})")
-        col_confirm, col_cancel = st.columns([1, 1])
-        if col_cancel.button("Cancelar"):
-            st.session_state.parada_selecionada = None
-            st.session_state.parada_aba = "Listar"
-            st.rerun()
-
-        if col_confirm.button("Confirmar Exclusão ?"):
-            try:
-                parada_id = parada.get("id")
-                excluir_parada(parada_id)
-                st.success("Parada excluída com sucesso")
-                st.session_state.parada_selecionada = None
-                st.session_state.parada_aba = "Listar"
-                st.rerun()
-
-            except Exception as e:
-                st.error(f"Erro ao excluir Parada: {e}")
 

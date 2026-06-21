@@ -349,7 +349,7 @@ elif st.session_state.sku_aba == "Alterar":
             # Ações
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:
-                salvar = st.form_submit_button("Salvar Alterações")
+                salvar = st.form_submit_button("Salvar")
             with btn_col2:
                 cancelar = st.form_submit_button("Cancelar")
 

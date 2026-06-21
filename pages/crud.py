@@ -207,21 +207,25 @@ class SupabaseProxy:
     def __init__(self):
         """Inicializa sem criar cliente imediatamente."""
         self._client = None
+        self._active_token = None
 
     def _ensure_client(self):
+        access_token = st.session_state.get("supabase_access_token")
+        refresh_token = st.session_state.get("supabase_refresh_token")
+
         if self._client is None:
             config = settings.get_supabase_config()
             self._client = create_client(config["url"], config["key"])
 
-            access_token = st.session_state.get("supabase_access_token")
-            refresh_token = st.session_state.get("supabase_refresh_token")
-            if access_token and refresh_token:
-                try:
-                    self._client.auth.set_session(access_token, refresh_token)
-                except Exception:
-                    logger.warning(
-                        "Não foi possível restaurar sessão Supabase no proxy crud"
-                    )
+        # Atualiza sessão sempre que o token mudar (ex: após logout/novo login)
+        if access_token and refresh_token and access_token != self._active_token:
+            try:
+                self._client.auth.set_session(access_token, refresh_token)
+                self._active_token = access_token
+            except Exception:
+                logger.warning(
+                    "Não foi possível restaurar sessão Supabase no proxy crud"
+                )
 
     def __getattr__(self, name):
         """Delegar chamadas para o cliente Supabase real."""
@@ -270,7 +274,7 @@ def get_supabase_admin():
 # ####################################################
 
 def listar_clientes(filtro_empresa=""):
-    query = supabase.table("clientes").select("id, empresa, cidade, telefone, contato, email")
+    query = supabase.table("clientes").select("id, empresa, cidade, telefone, contato, email, status")
     if filtro_empresa:
         query = query.filter("empresa", "ilike", f"%{filtro_empresa}%")
     query = query.order("empresa", desc=False)
@@ -294,6 +298,12 @@ def alterar_cliente(id, dados):
 
 def excluir_cliente(id):
     supabase.table("clientes").delete().eq("id", id).execute()
+
+def desativar_cliente(id):
+    supabase.table("clientes").update({"status": False}).eq("id", id).execute()
+
+def reativar_cliente(id):
+    supabase.table("clientes").update({"status": True}).eq("id", id).execute()
 
 # ####################################################
 # PRODUTOS  - TABELA PRODUTOS
@@ -1206,7 +1216,8 @@ def listar_paradas(cliente_id=""):
             codigo,
             descricao,
             categoria_oee,
-            cliente_id
+            cliente_id,
+            ativo
             """
         )
     )
@@ -1281,11 +1292,23 @@ def alterar_parada(
 
     return response.data
 
-def excluir_parada(parada_id):
+def desativar_parada(parada_id):
     response = (
         supabase
         .table("paradas")
-        .delete()
+        .update({"ativo": False})
+        .eq("id", parada_id)
+        .execute()
+    )
+
+    return response.data
+
+
+def reativar_parada(parada_id):
+    response = (
+        supabase
+        .table("paradas")
+        .update({"ativo": True})
         .eq("id", parada_id)
         .execute()
     )

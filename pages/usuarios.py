@@ -408,11 +408,11 @@ elif st.session_state.usuarios_aba == "Incluir":
         col1, col2 = st.columns(2)
 
         salvar = col1.form_submit_button(
-            "Incluir Usuário"
+            "Salvar"
         )
 
         voltar = col2.form_submit_button(
-            "Voltar"
+            "Sair sem Salvar"
         )
 
         if salvar:
@@ -495,7 +495,7 @@ elif st.session_state.usuarios_aba == "Alterar":
             )
 
             voltar = col2.form_submit_button(
-                "Voltar"
+                "Cancelar"
             )
 
             if salvar:
