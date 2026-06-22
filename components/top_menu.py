@@ -12,7 +12,7 @@ def render_top_menu():
     with c1:
         if st.button(
             "🏠 Home",
-            width="stretch",
+            use_container_width=True,
             key="tm_top_home"
         ):
             st.switch_page("pages/homepage.py")
@@ -20,7 +20,7 @@ def render_top_menu():
     with c2:
         if st.button(
             "📋 Planejamento",
-            width="stretch",
+            use_container_width=True,
             key="tm_top_planejamento"
         ):
             st.session_state.menu_grupo = "planejamento"
@@ -29,7 +29,7 @@ def render_top_menu():
     with c3:
         if st.button(
             "🏭 Cadastros",
-            width="stretch",
+            use_container_width=True,
             key="tm_top_cadastros"
         ):
             st.session_state.menu_grupo = "cadastros"
@@ -38,7 +38,7 @@ def render_top_menu():
     with c4:
         if st.button(
             "⚙️ Configurações",
-            width="stretch",
+            use_container_width=True,
             key="tm_top_config"
         ):
             st.session_state.menu_grupo = "configuracoes"
@@ -57,7 +57,7 @@ def render_top_menu():
         with c1:
             if st.button(
                 "📈 Demandas",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_demanda"
             ):
                 st.switch_page("pages/demandas.py")
@@ -65,7 +65,7 @@ def render_top_menu():
         with c2:
             if st.button(
                 "📅 Paradas",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_paradas"
             ):
                 st.switch_page("pages/paradas.py")
@@ -81,7 +81,7 @@ def render_top_menu():
         with c1:
             if st.button(
                 "🏭 Áreas",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_areas"
             ):
                 st.switch_page("pages/areas.py")
@@ -89,7 +89,7 @@ def render_top_menu():
         with c2:
             if st.button(
                 "🏗️ Linhas",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_linhas"
             ):
                 st.switch_page("pages/linhas.py")
@@ -97,7 +97,7 @@ def render_top_menu():
         with c3:
             if st.button(
                 "⚙️ Processos",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_processos"
             ):
                 st.switch_page("pages/processos.py")
@@ -105,7 +105,7 @@ def render_top_menu():
         with c4:
             if st.button(
                 "🔧 Equipamentos",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_equipamentos"
             ):
                 st.switch_page("pages/equipamentos.py")
@@ -113,7 +113,7 @@ def render_top_menu():
         with c5:
             if st.button(
                 "📦 Produtos",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_produtos"
             ):
                 st.switch_page("pages/produtos.py")
@@ -129,7 +129,7 @@ def render_top_menu():
         with c1:
             if st.button(
                 "📦 SKU",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_sku"
             ):
                 st.switch_page("pages/produtos.py")
@@ -137,7 +137,7 @@ def render_top_menu():
         with c2:
             if st.button(
                 "🎨 Layout",
-                width="stretch",
+                use_container_width=True,
                 key="tm_sub_layout"
             ):
                 st.switch_page("pages/layout.py")
@@ -148,7 +148,7 @@ def render_top_menu():
             with c3:
                 if st.button(
                     "🏢 Clientes",
-                    width="stretch",
+                    use_container_width=True,
                     key="tm_sub_clientes"
                 ):
                     st.switch_page("pages/clientes.py")
@@ -156,7 +156,7 @@ def render_top_menu():
             with c4:
                 if st.button(
                     "👥 Usuários",
-                    width="stretch",
+                    use_container_width=True,
                     key="tm_sub_usuarios"
                 ):
                     st.switch_page("pages/usuarios.py")

@@ -181,7 +181,7 @@ elif st.session_state.clientes_aba == "Incluir":
             email = st.text_input("Email", max_chars=120).strip()
         with col2:
             opcoes_status = ["Ativa", "Suspensa"]
-            status_sel = st.selectbox("Situação", opcoes_status, index=0, width="stretch")
+            status_sel = st.selectbox("Situação", opcoes_status, index=0)
 
         dados = {
             "empresa": empresa,
@@ -198,9 +198,9 @@ elif st.session_state.clientes_aba == "Incluir":
 
         btn_col1, btn_col2 = st.columns([1, 1])
         with btn_col1:
-            salvar = st.form_submit_button("Salvar", width="stretch")
+            salvar = st.form_submit_button("Salvar", use_container_width=True)
         with btn_col2:
-            sair_sem_salvar = st.form_submit_button("Sair sem Salvar", width="stretch")
+            sair_sem_salvar = st.form_submit_button("Sair sem Salvar", use_container_width=True)
 
         if sair_sem_salvar:
             st.session_state.clientes_aba = "Listar"
@@ -306,7 +306,6 @@ elif st.session_state.clientes_aba == "Alterar":
                     "Situação",
                     opcoes_status,
                     index=status_idx,
-                    width="stretch",
                 )
 
             dados = {
@@ -324,9 +323,9 @@ elif st.session_state.clientes_aba == "Alterar":
 
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:
-                salvar = st.form_submit_button("Salvar", width="stretch")
+                salvar = st.form_submit_button("Salvar", use_container_width=True)
             with btn_col2:
-                cancelar = st.form_submit_button("Cancelar", width="stretch")
+                cancelar = st.form_submit_button("Cancelar", use_container_width=True)
 
             if cancelar:
                 st.session_state.clientes_selecionado = None

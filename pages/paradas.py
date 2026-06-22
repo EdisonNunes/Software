@@ -253,7 +253,7 @@ elif st.session_state.parada_aba == "Incluir":
             codigo = st.text_input("Código", max_chars=50)
             descricao = st.text_input("Descrição", max_chars=255)
             categorias_oee = ["Disponibilidade", "Performance", "Qualidade"]
-            categoria_oee = st.selectbox("Categoria OEE", categorias_oee, width="stretch")
+            categoria_oee = st.selectbox("Categoria OEE", categorias_oee)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -312,7 +312,6 @@ elif st.session_state.parada_aba == "Alterar":
                     "Categoria OEE",
                     categorias_oee,
                     index=categorias_oee.index(categoria_atual),
-                    width="stretch",
                 )
                 # Ações
             btn_col1, btn_col2 = st.columns([1, 1])

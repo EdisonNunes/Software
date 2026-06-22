@@ -267,7 +267,7 @@ elif st.session_state.equip_aba == "Incluir":
             with col_id_1:
                 codigo = st.text_input("Código", max_chars=50, placeholder="Ex.: EQP-001")
             with col_id_2:
-                classif = st.selectbox("Classificação", ["Principal", "Secundário"], width="stretch")
+                classif = st.selectbox("Classificação", ["Principal", "Secundário"])
 
             descricao = st.text_input("Descrição", max_chars=255, placeholder="Nome descritivo do equipamento")
 
@@ -278,14 +278,12 @@ elif st.session_state.equip_aba == "Incluir":
                     "Linha",
                     options=opcoes_linha,
                     format_func=lambda item_id: linha_por_id.get(item_id, ""),
-                    width="stretch",
                 )
             with col_estr_2:
                 processo_id = st.selectbox(
                     "Processo",
                     options=opcoes_processo,
                     format_func=lambda item_id: processo_por_id.get(item_id, ""),
-                    width="stretch",
                 )
 
             st.markdown("#### Capacidade")
@@ -293,9 +291,9 @@ elif st.session_state.equip_aba == "Incluir":
             with col_cap_1:
                 capacidade = st.number_input("Capacidade", min_value=0.0, step=0.1, format="%.2f")
             with col_cap_2:
-                unidade_capac = st.selectbox("Unidade", options=unidades_capac, width="stretch")
+                unidade_capac = st.selectbox("Unidade", options=unidades_capac)
             with col_cap_3:
-                unidade_tempo = st.selectbox("Tempo", options=unidades_tempo, width="stretch")
+                unidade_tempo = st.selectbox("Tempo", options=unidades_tempo)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -393,7 +391,6 @@ elif st.session_state.equip_aba == "Alterar":
                     "Classificação",
                     ["Principal", "Secundário"],
                     index=0 if classif_atual == "Principal" else 1,
-                    width="stretch",
                 )
 
             descricao = st.text_input("Descrição", value=equipamento.get('descricao', ''), max_chars=255)
@@ -406,7 +403,6 @@ elif st.session_state.equip_aba == "Alterar":
                     options=opcoes_linha,
                     index=opcoes_linha.index(linha_id_atual),
                     format_func=lambda item_id: linha_por_id.get(item_id, ""),
-                    width="stretch",
                 )
             with col_estr_2:
                 processo_id = st.selectbox(
@@ -414,7 +410,6 @@ elif st.session_state.equip_aba == "Alterar":
                     options=opcoes_processo,
                     index=opcoes_processo.index(processo_id_atual),
                     format_func=lambda item_id: processo_por_id.get(item_id, ""),
-                    width="stretch",
                 )
 
             st.markdown("#### Capacidade")
@@ -432,14 +427,12 @@ elif st.session_state.equip_aba == "Alterar":
                     "Unidade",
                     options=unidades_capac,
                     index=unidades_capac.index(unidade_capac_atual),
-                    width="stretch",
                 )
             with col_cap_3:
                 unidade_tempo = st.selectbox(
                     "Tempo",
                     options=unidades_tempo,
                     index=unidades_tempo.index(unidade_tempo_atual),
-                    width="stretch",
                 )
 
             btn_col1, btn_col2 = st.columns([1, 1])
