@@ -8,13 +8,80 @@ from components.session_state import ensure_session_state
 from components.sidebar import render_app_sidebar
 from components.top_menu import render_top_menu
 from pages.theme import read_streamlit_theme
-from pages.crud import (
-	alterar_meta,
-	incluir_meta,
-	listar_clientes,
-	listar_metas,
-	listar_todos_dados_metas,
+from pages import crud as crud_module
+from pages.crud import listar_clientes, supabase
+
+
+def _listar_metas_fallback(cliente_id=""):
+	query = (
+		supabase
+		.table("metas")
+		.select(
+			"""
+			id,
+			parametro,
+			descricao,
+			valor,
+			ativo,
+			cliente_id
+			"""
+		)
+	)
+
+	if cliente_id:
+		query = query.eq("cliente_id", cliente_id)
+
+	response = query.order("parametro", desc=False).execute()
+	return response.data
+
+
+def _listar_todos_dados_metas_fallback(cliente_id=""):
+	query = supabase.table("metas").select("*")
+
+	if cliente_id:
+		query = query.eq("cliente_id", cliente_id)
+
+	response = query.order("parametro", desc=False).execute()
+	return response.data
+
+
+def _incluir_meta_fallback(parametro, descricao, valor, cliente_id, ativo=True):
+	response = (
+		supabase
+		.table("metas")
+		.insert(
+			{
+				"parametro": parametro,
+				"descricao": descricao,
+				"valor": valor,
+				"cliente_id": cliente_id,
+				"ativo": ativo,
+			}
+		)
+		.execute()
+	)
+	return response.data
+
+
+def _alterar_meta_fallback(meta_id, valor):
+	response = (
+		supabase
+		.table("metas")
+		.update({"valor": valor})
+		.eq("id", meta_id)
+		.execute()
+	)
+	return response.data
+
+
+listar_metas = getattr(crud_module, "listar_metas", _listar_metas_fallback)
+listar_todos_dados_metas = getattr(
+	crud_module,
+	"listar_todos_dados_metas",
+	_listar_todos_dados_metas_fallback,
 )
+incluir_meta = getattr(crud_module, "incluir_meta", _incluir_meta_fallback)
+alterar_meta = getattr(crud_module, "alterar_meta", _alterar_meta_fallback)
 
 
 def _normalizar_valor(valor: str) -> str:
