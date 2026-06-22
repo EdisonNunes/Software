@@ -26,30 +26,30 @@ with col_header_left:
 # =====================================================
 
 empresa = st.session_state.get("empresa", "")
-
-if st.session_state.get("role") not in ["admin", "supervisor"]:
-    with col_header_right:
-        st.markdown(
-            f"""
-            <div style="
-                width:100%;
-                min-height:3.25rem;
-                display:flex;
-                align-items:flex-start;
-                justify-content:flex-end;
-                text-align:right;
-                font-size:clamp(22px, 1.6vw, 30px);
-                font-weight:700;
-                color:orange;
-                margin-top:0.2rem;
-                margin-bottom:10px;
-                line-height:1.2;
-            ">
-                Empresa: {empresa}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+# print(f"Empresa: {empresa}")
+# if st.session_state.get("role") not in ["admin", "supervisor"]:
+with col_header_right:
+    st.markdown(
+        f"""
+        <div style="
+            width:100%;
+            min-height:3.25rem;
+            display:flex;
+            align-items:flex-start;
+            justify-content:flex-end;
+            text-align:right;
+            font-size:clamp(22px, 1.6vw, 30px);
+            font-weight:700;
+            color:orange;
+            margin-top:0.2rem;
+            margin-bottom:10px;
+            line-height:1.2;
+        ">
+            {empresa}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.divider()
 
@@ -94,6 +94,7 @@ if st.session_state.get("role") in ["admin", "supervisor", "gerente"]:
 
             st.page_link(
                 "pages/clientes.py",
+                help='Gerencie os clientes da plataforma',
                 label="Abrir"
             )
     with c2:
@@ -104,6 +105,7 @@ if st.session_state.get("role") in ["admin", "supervisor", "gerente"]:
 
             st.page_link(
                 "pages/usuarios.py",
+                help='Gerencie os responsáveis de uma empresa',
                 label="Abrir"
             )
 
@@ -124,6 +126,7 @@ with c1:
         st.markdown("**Áreas de Produção**")
         st.page_link(
             "pages/areas.py",
+            help='Gerencie as áreas de produção',
             label="Abrir"
         )
 
@@ -135,6 +138,7 @@ with c2:
 
         st.page_link(
             "pages/linhas.py",
+            help='Gerencie as linhas de produção',
             label="Abrir"
         )
 with c3:
@@ -145,6 +149,7 @@ with c3:
 
         st.page_link(
             "pages/processos.py",
+            help='Gerencie os processos de produção',
             label="Abrir"
         )
 with c4:
@@ -155,6 +160,7 @@ with c4:
 
         st.page_link(
             "pages/equipamentos.py",
+            help='Gerencie os equipamentos de produção',
             label="Abrir"
         )
 
@@ -169,6 +175,7 @@ with c1:
 
         st.page_link(
             "pages/produtos.py",
+            help='Gerencie os produtos (SKU) da empresa',
             label="Abrir"
         )
 with c2:
@@ -179,6 +186,7 @@ with c2:
 
         st.page_link(
             "pages/demandas.py",
+            help='Gerencie as demandas da empresa',
             label="Abrir"
         )        
 with c3:
@@ -190,18 +198,21 @@ with c3:
 
         st.page_link(
             "pages/paradas.py",
+            help='Gerencie as paradas programadas da empresa',
             label="Abrir"
         )
 
 with c4:
     with st.container(border=True):
 
-        st.markdown("### 🎨")
-        st.markdown("**Layout Industrial**")
+        st.markdown("### 🎯")
+        st.markdown("**Metas**")
         st.page_link(
-            "pages/layout.py",
+            "pages/metas.py",
+            help='Gerencie as metas da empresa',
             label="Abrir"
         )
+
 
 # =====================================================
 # INDICADORES
@@ -214,31 +225,36 @@ c1, c2, c3, c4, c5 = st.columns(5)
 with c1:
     st.metric(
         "🏭 Áreas",
-        total_areas
+        border=True,
+        value=total_areas
     )
 
 with c2:
     st.metric(
         "🏗️ Linhas",
-        total_linhas
+        border=True,
+        value=total_linhas  
     )
 
 with c3:
     st.metric(
         "⚙️ Processos",
-        total_processos
+        border=True,
+        value=total_processos
     )
 
 with c4:
     st.metric(
         "🔧 Equipamentos",
-        total_equipamentos
+        border=True,
+        value=total_equipamentos
     )
 
 with c5:
     st.metric(
         "📦 Produtos",
-        total_produtos
+        border=True,
+        value=total_produtos
     )
 
 

@@ -984,6 +984,105 @@ def excluir_linha(linha_id):
 #         return False
 
 # ============================================================================================
+# create table public.metas (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   created_by uuid null,
+#   updated_at timestamp with time zone null,
+#   updated_by uuid null,
+#   cliente_id uuid not null,
+#   parametro text not null,
+#   descricao text null,
+#   valor text not null,
+#   ativo boolean not null default true,
+#   constraint metas_pkey primary key (id),
+#   constraint metas_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
+# ) TABLESPACE pg_default;
+
+def listar_metas(cliente_id=""):
+    query = (
+        supabase
+        .table("metas")
+        .select(
+            """
+            id,
+            parametro,
+            descricao,
+            valor,
+            ativo,
+            cliente_id
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("parametro", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def listar_todos_dados_metas(cliente_id=""):
+    query = (
+        supabase
+        .table("metas")
+        .select("*")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("parametro", desc=False)
+
+    response = query.execute()
+
+    return response.data
+
+def incluir_meta(
+    parametro,
+    descricao,
+    valor,
+    cliente_id,
+    ativo=True
+):
+    response = (
+        supabase
+        .table("metas")
+        .insert(
+            {
+                "parametro": parametro,
+                "descricao": descricao,
+                "valor": valor,
+                "cliente_id": cliente_id,
+                "ativo": ativo,
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+def alterar_meta(
+    meta_id,
+    valor
+):
+    response = (
+        supabase
+        .table("metas")
+        .update(
+            {
+                "valor": valor,
+            }
+        )
+        .eq("id", meta_id)
+        .execute()
+    )
+
+    return response.data
+
+# ============================================================================================
 # create table public.processos (
 #   id uuid not null default gen_random_uuid (),
 #   created_at timestamp with time zone not null default now(),
