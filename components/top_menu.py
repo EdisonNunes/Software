@@ -76,7 +76,7 @@ def render_top_menu():
 
     elif st.session_state.get("menu_grupo") == "cadastros":
 
-        c1, c2, c3, c4, c5 = st.columns(5)
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
 
         with c1:
             if st.button(
@@ -112,7 +112,15 @@ def render_top_menu():
 
         with c5:
             if st.button(
-                "📦 Produtos",
+                "⏱️ Turnos",
+                use_container_width=True,
+                key="tm_sub_turnos"
+            ):
+                st.switch_page("pages/turnos.py")
+
+        with c6:
+            if st.button(
+                "📦 SKU",
                 use_container_width=True,
                 key="tm_sub_produtos"
             ):

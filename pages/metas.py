@@ -63,11 +63,15 @@ def _incluir_meta_fallback(parametro, descricao, valor, cliente_id, ativo=True):
 	return response.data
 
 
-def _alterar_meta_fallback(meta_id, valor):
+def _alterar_meta_fallback(meta_id, valor, ativo=None):
+	update_payload = {"valor": valor}
+	if ativo is not None:
+		update_payload["ativo"] = ativo
+
 	response = (
 		supabase
 		.table("metas")
-		.update({"valor": valor})
+		.update(update_payload)
 		.eq("id", meta_id)
 		.execute()
 	)
@@ -258,6 +262,15 @@ def _obter_intervalo_fmea(valor: str) -> tuple[int, int]:
 	return 1, 5
 
 
+def _formatar_valor_meta(meta: dict) -> str:
+	valor = meta.get("valor", "-")
+	if not _eh_escala_fmea(meta):
+		return valor
+
+	minimo, maximo = _obter_intervalo_fmea(valor)
+	return f"Intervalo de {minimo} a {maximo}"
+
+
 def _render_meta_cards(metas: list[dict], selected_id: str | None) -> dict | None:
 	if not metas:
 		st.info("Nenhuma meta cadastrada para este cliente.")
@@ -305,7 +318,7 @@ def _render_meta_cards(metas: list[dict], selected_id: str | None) -> dict | Non
 							Valor atual
 						</div>
 						<div style="font-size:1.8rem; font-weight:800; color:{paleta['value_color']}; margin-top:0.15rem;">
-							{meta.get('valor', '-')}
+								{_formatar_valor_meta(meta)}
 						</div>
 					</div>
 					""",
@@ -339,6 +352,9 @@ ensure_session_state(
 		"metas_cliente_pagina": 0,
 	}
 )
+
+if st.session_state.metas_aba == "Incluir":
+	st.session_state.metas_aba = "Listar"
 
 if st.session_state.get("role") not in ["admin", "supervisor"]:
 	if st.session_state.metas_cliente_selecionado is None and st.session_state.get("cliente"):
@@ -424,53 +440,6 @@ if st.session_state.metas_aba == "Listar":
 	elif not metas:
 		st.session_state.metas_selecionada = None
 
-	if st.button("Incluir", use_container_width=True):
-		st.session_state.metas_aba = "Incluir"
-		st.rerun()
-
-elif st.session_state.metas_aba == "Incluir":
-	st.subheader("Incluir Meta")
-
-	if st.session_state.metas_cliente_selecionado is None:
-		st.warning("Selecione um cliente antes de incluir uma meta.")
-		if st.button("Escolher cliente"):
-			st.session_state.metas_aba = "Listar"
-			st.rerun()
-	else:
-		cliente = st.session_state.metas_cliente_selecionado
-		cliente_id = cliente.get("id") or cliente.get("id_cliente")
-		_render_cliente_banner(cliente, len(listar_metas(cliente_id)))
-
-		with st.form("form_incluir_meta"):
-			with st.container(border=True):
-				parametro = st.text_input("Parâmetro *", max_chars=120, placeholder="Ex.: Meta OEE").strip()
-				descricao = st.text_input("Descrição", max_chars=255, placeholder="Ex.: Classe Mundial").strip()
-				valor = st.text_input("Valor *", max_chars=30, placeholder="Ex.: 0,85").strip()
-
-			btn_col1, btn_col2 = st.columns([1, 1])
-			with btn_col1:
-				salvar = st.form_submit_button("Salvar", use_container_width=True)
-			with btn_col2:
-				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
-
-			if cancelar:
-				st.session_state.metas_aba = "Listar"
-				st.rerun()
-
-			if salvar:
-				try:
-					if not parametro:
-						raise ValueError("Informe o parâmetro da meta.")
-
-					valor_normalizado = _normalizar_valor(valor)
-					incluir_meta(parametro, descricao, valor_normalizado, cliente_id)
-					st.success("Meta incluída com sucesso!")
-					st.session_state.metas_selecionada = None
-					st.session_state.metas_aba = "Listar"
-					st.rerun()
-				except Exception as e:
-					st.error(str(e))
-
 elif st.session_state.metas_aba == "Alterar":
 	st.subheader("Alterar Meta")
 
@@ -489,27 +458,33 @@ elif st.session_state.metas_aba == "Alterar":
 
 		with st.form("form_alterar_meta"):
 			with st.container(border=True):
-				st.text_input("Parâmetro", value=meta.get("parametro", ""), disabled=True)
-				st.text_input("Descrição", value=meta.get("descricao", ""), disabled=True)
+				col_esq, col_dir = st.columns(2)
 
-				if eh_escala_fmea:
-					col_min, col_max = st.columns(2)
-					with col_min:
-						valor_minimo = st.number_input(
-							"Mínimo",
-							min_value=0,
-							value=int(minimo_inicial),
-							step=1,
-						)
-					with col_max:
-						valor_maximo = st.number_input(
-							"Máximo",
-							min_value=0,
-							value=int(maximo_inicial),
-							step=1,
-						)
-				else:
-					valor = st.text_input("Valor", value=meta.get("valor", ""), max_chars=30)
+				with col_esq:
+					st.text_input("Parâmetro", value=meta.get("parametro", ""), disabled=True)
+
+					if eh_escala_fmea:
+						col_min, col_max = st.columns(2)
+						with col_min:
+							valor_minimo = st.number_input(
+								"Valor mínimo",
+								min_value=0,
+								value=int(minimo_inicial),
+								step=1,
+							)
+						with col_max:
+							valor_maximo = st.number_input(
+								"Valor máximo",
+								min_value=0,
+								value=int(maximo_inicial),
+								step=1,
+							)
+					else:
+						valor = st.text_input("Valor", value=meta.get("valor", ""), max_chars=30)
+
+				with col_dir:
+					st.text_input("Descrição", value=meta.get("descricao", ""), disabled=True)
+					ativo = st.checkbox("Meta ativa", value=bool(meta.get("ativo", True)))
 
 			btn_col1, btn_col2 = st.columns([1, 1])
 			with btn_col1:
@@ -530,13 +505,9 @@ elif st.session_state.metas_aba == "Alterar":
 					else:
 						valor_normalizado = _normalizar_valor(valor)
 
-					alterar_meta(meta.get("id"), valor_normalizado)
+					alterar_meta(meta.get("id"), valor_normalizado, ativo)
 					st.success("Meta alterada com sucesso!")
-					metas_atualizadas = listar_todos_dados_metas(cliente_id)
-					st.session_state.metas_selecionada = next(
-						(item for item in metas_atualizadas if item.get("id") == meta.get("id")),
-						None,
-					)
+					st.session_state.metas_selecionada = None
 					st.session_state.metas_aba = "Listar"
 					st.rerun()
 				except Exception as e:

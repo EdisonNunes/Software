@@ -123,10 +123,10 @@ with c1:
     with st.container(border=True):
 
         st.markdown("### 🏭")
-        st.markdown("**Áreas de Produção**")
+        st.markdown("**Turnos**")
         st.page_link(
-            "pages/areas.py",
-            help='Gerencie as áreas de produção',
+            "pages/turnos.py",
+            help='Gerencie os turnos',
             label="Abrir"
         )
 
@@ -171,11 +171,11 @@ with c1:
     with st.container(border=True):
 
         st.markdown("### 📦")
-        st.markdown("**Produtos (SKU)**")
+        st.markdown("**SKU**")
 
         st.page_link(
             "pages/produtos.py",
-            help='Gerencie os produtos (SKU) da empresa',
+            help='Gerencie os SKU da empresa',
             label="Abrir"
         )
 with c2:
@@ -194,11 +194,11 @@ with c3:
     with st.container(border=True):
 
         st.markdown("### 📅")
-        st.markdown("**Paradas Programadas**")
+        st.markdown("**Paradas de Processo**")
 
         st.page_link(
             "pages/paradas.py",
-            help='Gerencie as paradas programadas da empresa',
+            help='Gerencie as paradas de processo da empresa',
             label="Abrir"
         )
 
@@ -223,38 +223,36 @@ st.subheader("📊 Visão Geral")
 c1, c2, c3, c4, c5 = st.columns(5)
 
 with c1:
-    st.metric(
-        "🏭 Áreas",
-        border=True,
-        value=total_areas
-    )
+    with st.container(border=True):
+        st.metric(
+            "🏭 Áreas",
+            value=total_areas
+        )
 
 with c2:
-    st.metric(
-        "🏗️ Linhas",
-        border=True,
-        value=total_linhas  
-    )
+    with st.container(border=True):
+        st.metric(
+            "🏗️ Linhas",
+            value=total_linhas  
+        )
 
 with c3:
-    st.metric(
-        "⚙️ Processos",
-        border=True,
-        value=total_processos
-    )
+    with st.container(border=True):
+        st.metric(
+            "⚙️ Processos",
+            value=total_processos
+        )
 
 with c4:
-    st.metric(
-        "🔧 Equipamentos",
-        border=True,
-        value=total_equipamentos
-    )
+    with st.container(border=True):
+        st.metric(
+            "🔧 Equipamentos",
+            value=total_equipamentos
+        )
 
 with c5:
-    st.metric(
-        "📦 Produtos",
-        border=True,
-        value=total_produtos
-    )
-
-
+    with st.container(border=True):
+        st.metric(
+            "📦 SKU",
+            value=total_produtos
+        )

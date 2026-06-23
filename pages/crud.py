@@ -1066,16 +1066,20 @@ def incluir_meta(
 
 def alterar_meta(
     meta_id,
-    valor
+    valor,
+    ativo=None
 ):
+    update_payload = {
+        "valor": valor,
+    }
+
+    if ativo is not None:
+        update_payload["ativo"] = ativo
+
     response = (
         supabase
         .table("metas")
-        .update(
-            {
-                "valor": valor,
-            }
-        )
+        .update(update_payload)
         .eq("id", meta_id)
         .execute()
     )
@@ -1239,6 +1243,7 @@ def contar_equipamentos(cliente_id=None):
 
 def contar_produtos(cliente_id=None):
     query = supabase.table("produtos").select("id", count="exact")
+
     if cliente_id:
         query = query.eq("cliente_id", cliente_id)
     response = query.execute()
@@ -1409,6 +1414,159 @@ def reativar_parada(parada_id):
         .table("paradas")
         .update({"ativo": True})
         .eq("id", parada_id)
+        .execute()
+    )
+
+    return response.data
+
+
+# ####################################################
+# TURNOS  - TABELA TURNOS
+# create table public.turnos (
+#   id uuid not null default gen_random_uuid (),
+#   created_at timestamp with time zone not null default now(),
+#   created_by uuid null,
+#   updated_at timestamp with time zone null,
+#   updated_by uuid null,
+#   cliente_id uuid not null,
+#   descricao text not null,
+#   inicio time without time zone not null,
+#   final time without time zone not null,
+#   ativo boolean not null default true,
+#   constraint turnos_pkey primary key (id),
+#   constraint turnos_cliente_descricao_unique unique (cliente_id, descricao),
+#   constraint turnos_cliente_id_fkey foreign KEY (cliente_id) references clientes (id) on update CASCADE on delete CASCADE
+# ) TABLESPACE pg_default;
+# ####################################################
+def _turno_ja_existe(cliente_id, descricao, turno_id=None):
+    query = (
+        supabase
+        .table("turnos")
+        .select("id")
+        .eq("cliente_id", cliente_id)
+        .eq("descricao", descricao)
+    )
+
+    if turno_id:
+        query = query.neq("id", turno_id)
+
+    response = query.execute()
+    return bool(response.data)
+
+
+def listar_turnos(cliente_id=""):
+    query = (
+        supabase
+        .table("turnos")
+        .select(
+            """
+            id,
+            descricao,
+            inicio,
+            final,
+            cliente_id,
+            ativo
+            """
+        )
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+    return response.data
+
+
+def listar_todos_dados_turnos(cliente_id=""):
+    query = supabase.table("turnos").select("*")
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.order("descricao", desc=False)
+
+    response = query.execute()
+    return response.data
+
+
+def incluir_turno(descricao, inicio, final, cliente_id, ativo=True):
+    descricao = (descricao or "").strip()
+    if _turno_ja_existe(cliente_id, descricao):
+        raise ValueError("Já existe um turno com essa descrição para este cliente.")
+
+    response = (
+        supabase
+        .table("turnos")
+        .insert(
+            {
+                "descricao": descricao,
+                "inicio": inicio,
+                "final": final,
+                "cliente_id": cliente_id,
+                "ativo": ativo,
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def alterar_turno(turno_id, descricao, inicio, final, ativo=None):
+    descricao = (descricao or "").strip()
+
+    existing = (
+        supabase
+        .table("turnos")
+        .select("cliente_id")
+        .eq("id", turno_id)
+        .execute()
+    )
+
+    cliente_id = existing.data[0]["cliente_id"] if existing.data else None
+    if cliente_id and _turno_ja_existe(cliente_id, descricao, turno_id=turno_id):
+        raise ValueError("Já existe um turno com essa descrição para este cliente.")
+
+    update_payload = {
+        "descricao": descricao,
+        "inicio": inicio,
+        "final": final,
+    }
+
+    if ativo is not None:
+        update_payload["ativo"] = ativo
+
+    response = (
+        supabase
+        .table("turnos")
+        .update(update_payload)
+        .eq("id", turno_id)
+        .execute()
+    )
+
+    return response.data
+
+
+def desativar_turno(turno_id):
+    response = (
+        supabase
+        .table("turnos")
+        .update({"ativo": False})
+        .eq("id", turno_id)
+        .execute()
+    )
+
+    return response.data
+
+
+def reativar_turno(turno_id):
+    response = (
+        supabase
+        .table("turnos")
+        .update({"ativo": True})
+        .eq("id", turno_id)
         .execute()
     )
 

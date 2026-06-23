@@ -15,7 +15,10 @@ def _logout():
 
 def render_app_sidebar():
     with st.sidebar:
-        st.image("Imagens/Logo1.png", use_container_width=True)
+        try:
+            st.image("Imagens/Logo1.png", width="stretch")
+        except TypeError:
+            st.image("Imagens/Logo1.png", use_column_width=True)
         st.divider()
 
         st.caption(f"👤 {st.session_state.get('user_name', '')}")

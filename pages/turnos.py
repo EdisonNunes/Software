@@ -1,0 +1,441 @@
+from datetime import datetime, time, timedelta
+
+import pandas as pd
+import streamlit as st
+
+from components.session_state import ensure_session_state
+from components.sidebar import render_app_sidebar
+from components.top_menu import render_top_menu
+from pages.theme import read_streamlit_theme
+from pages.crud import (
+	alterar_turno,
+	incluir_turno,
+	listar_clientes,
+	listar_todos_dados_turnos,
+	listar_turnos,
+	desativar_turno,
+	reativar_turno,
+)
+
+
+def _parse_time_value(valor, default: time) -> time:
+	if isinstance(valor, time):
+		return valor
+	if valor:
+		texto = str(valor).strip()
+		for format_str in ("%H:%M:%S", "%H:%M"):
+			try:
+				return datetime.strptime(texto[:8], format_str).time()
+			except ValueError:
+				pass
+	return default
+
+
+def _format_time_value(valor) -> str:
+	if isinstance(valor, time):
+		return valor.strftime("%H:%M")
+	if valor is None:
+		return "--:--"
+	texto = str(valor).strip()
+	if len(texto) >= 5:
+		return texto[:5]
+	return texto
+
+
+def _hex_to_rgb(color_hex: str, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+	valor = (color_hex or "").strip().lstrip("#")
+	if len(valor) == 3:
+		valor = "".join([c * 2 for c in valor])
+	if len(valor) != 6:
+		return fallback
+	try:
+		return int(valor[0:2], 16), int(valor[2:4], 16), int(valor[4:6], 16)
+	except ValueError:
+		return fallback
+
+
+def _misturar(rgb_a: tuple[int, int, int], rgb_b: tuple[int, int, int], peso_a: float) -> tuple[int, int, int]:
+	peso_a = max(0.0, min(1.0, peso_a))
+	peso_b = 1.0 - peso_a
+	return (
+		int(rgb_a[0] * peso_a + rgb_b[0] * peso_b),
+		int(rgb_a[1] * peso_a + rgb_b[1] * peso_b),
+		int(rgb_a[2] * peso_a + rgb_b[2] * peso_b),
+	)
+
+
+def _contraste_texto(rgb: tuple[int, int, int]) -> str:
+	brilho = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000
+	return "#0F172A" if brilho > 135 else "#F8FAFC"
+
+
+def _banner_palette() -> dict[str, str]:
+	tema = read_streamlit_theme()
+	base = (tema.get("base") or "dark").lower()
+
+	bg_rgb = _hex_to_rgb(
+		tema.get("backgroundColor", "#FFFFFF" if base == "light" else "#0F172A"),
+		(255, 255, 255) if base == "light" else (15, 23, 42),
+	)
+	sec_rgb = _hex_to_rgb(
+		tema.get("secondaryBackgroundColor", "#F1F5F9" if base == "light" else "#1E293B"),
+		(241, 245, 249) if base == "light" else (30, 41, 59),
+	)
+	pri_rgb = _hex_to_rgb(
+		tema.get("primaryColor", "#2563EB"),
+		(37, 99, 235),
+	)
+	text_rgb = _hex_to_rgb(
+		tema.get("textColor", "#0F172A" if base == "light" else "#E2E8F0"),
+		(15, 23, 42) if base == "light" else (226, 232, 240),
+	)
+
+	banner_bg = _misturar(sec_rgb, bg_rgb, 0.62)
+	banner_border = _misturar(pri_rgb, sec_rgb, 0.58)
+	title_color = _contraste_texto(banner_bg)
+	body_color = "rgb({},{},{})".format(*_misturar(text_rgb, bg_rgb, 0.78))
+	label_color = "rgb({},{},{})".format(*_misturar(pri_rgb, text_rgb, 0.60))
+
+	return {
+		"banner_bg": f"rgb({banner_bg[0]},{banner_bg[1]},{banner_bg[2]})",
+		"banner_bg_soft": f"rgba({sec_rgb[0]},{sec_rgb[1]},{sec_rgb[2]},0.92)",
+		"banner_border": f"rgb({banner_border[0]},{banner_border[1]},{banner_border[2]})",
+		"title_color": title_color,
+		"body_color": body_color,
+		"label_color": label_color,
+	}
+
+
+def _render_cliente_banner(cliente: dict, total_turnos: int) -> None:
+	paleta = _banner_palette()
+	st.markdown(
+		f"""
+		<div style="
+			border: 1px solid {paleta['banner_border']};
+			background: linear-gradient(135deg, {paleta['banner_bg']}, {paleta['banner_bg_soft']});
+			border-radius: 18px;
+			padding: 18px 20px;
+			margin: 0.25rem 0 1rem 0;
+			box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+		">
+			<div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: {paleta['label_color']}; font-weight: 800;">
+				Cliente selecionado
+			</div>
+			<div style="font-size: 1.45rem; font-weight: 800; color: {paleta['title_color']}; margin-top: 0.15rem;">
+				{cliente.get('empresa', '')}
+			</div>
+			<div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:0.65rem; color:{paleta['body_color']}; font-size:0.95rem; font-weight:600;">
+				<span><strong>Cidade:</strong> {cliente.get('cidade', '-') or '-'}</span>
+				<span><strong>Turnos:</strong> {total_turnos}</span>
+			</div>
+		</div>
+		""",
+		unsafe_allow_html=True,
+	)
+
+
+def _turno_existe(cliente_id, descricao, turno_id=None) -> bool:
+	turnos = listar_turnos(cliente_id)
+	descricao_normalizada = (descricao or "").strip().lower()
+	for turno in turnos:
+		if turno_id and turno.get("id") == turno_id:
+			continue
+		if (turno.get("descricao") or "").strip().lower() == descricao_normalizada:
+			return True
+	return False
+
+
+def _formatar_status(ativo: bool) -> str:
+	return "🟢 Ativo" if ativo else "🔴 Inativo"
+
+
+if not st.session_state.get("authenticated", False):
+	st.switch_page("main.py")
+
+render_app_sidebar()
+render_top_menu()
+
+st.info("# Cadastro de Turnos", icon=":material/schedule:")
+
+ensure_session_state(
+	{
+		"turno_aba": "Listar",
+		"turno_pagina": 0,
+		"turno_busca_descricao": "",
+		"turno_selecionado": None,
+		"turno_cliente_selecionado": None,
+		"turno_cliente_pagina": 0,
+	}
+)
+
+if st.session_state.get("role") not in ["admin", "supervisor"]:
+	if st.session_state.turno_cliente_selecionado is None and st.session_state.get("cliente"):
+		st.session_state.turno_cliente_selecionado = st.session_state.cliente
+
+PAGE_SIZE = 10
+
+if st.session_state.turno_aba == "Listar":
+	if st.session_state.get("role") in ["admin", "supervisor"]:
+		busca_atual = st.text_input("Buscar cliente", st.session_state.turno_busca_descricao)
+		if busca_atual != st.session_state.turno_busca_descricao:
+			st.session_state.turno_busca_descricao = busca_atual
+			st.session_state.turno_cliente_pagina = 0
+			st.session_state.turno_pagina = 0
+			st.rerun()
+
+	if st.session_state.turno_cliente_selecionado is None:
+		if st.session_state.get("role") in ["admin", "supervisor"]:
+			clientes = listar_clientes(filtro_empresa=st.session_state.turno_busca_descricao)
+			total = len(clientes)
+			inicio = st.session_state.turno_cliente_pagina * PAGE_SIZE
+			fim = inicio + PAGE_SIZE
+
+			st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
+
+			if clientes:
+				clientes_paginados = clientes[inicio:fim]
+				df_clientes = pd.DataFrame(clientes_paginados).copy()
+				df_clientes["Selecionar"] = False
+
+				selecao_cli = st.data_editor(
+					df_clientes[["Selecionar", "empresa", "cidade", "telefone", "contato"]].reset_index(drop=True),
+					hide_index=True,
+					column_config={
+						"Selecionar": st.column_config.CheckboxColumn("Selecionar", help="Marque para selecionar"),
+						"empresa": st.column_config.TextColumn("Empresa"),
+						"cidade": st.column_config.TextColumn("Cidade"),
+						"telefone": st.column_config.TextColumn("Telefone"),
+						"contato": st.column_config.TextColumn("Contato"),
+					},
+					key="turnos_grid_clientes",
+				)
+
+				selecionados_cli = selecao_cli[selecao_cli["Selecionar"] == True]
+
+				if len(selecionados_cli) == 1:
+					idx = selecionados_cli.index[0]
+					if idx < len(clientes_paginados):
+						st.session_state.turno_cliente_selecionado = clientes_paginados[idx]
+						st.session_state.turno_selecionado = None
+						st.rerun()
+				elif len(selecionados_cli) > 1:
+					st.error("Selecione apenas 1 cliente por vez.")
+
+			col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
+			total_paginas = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+			if col_pag1.button("⬅️", disabled=st.session_state.turno_cliente_pagina <= 0):
+				st.session_state.turno_cliente_pagina -= 1
+				st.rerun()
+			col_pag2.write(f"Página {st.session_state.turno_cliente_pagina + 1} de {total_paginas}")
+			if col_pag3.button("➡️", disabled=(st.session_state.turno_cliente_pagina + 1) >= total_paginas):
+				st.session_state.turno_cliente_pagina += 1
+				st.rerun()
+
+			st.stop()
+		else:
+			if st.session_state.get("cliente"):
+				st.session_state.turno_cliente_selecionado = st.session_state.cliente
+				st.rerun()
+			st.error("Empresa do usuário não encontrada.")
+			st.stop()
+
+	cliente = st.session_state.turno_cliente_selecionado
+	cliente_id = cliente.get("id") or cliente.get("id_cliente") if cliente else None
+	turnos = listar_turnos(cliente_id) if cliente_id else []
+
+	_render_cliente_banner(cliente, len(turnos))
+
+	if turnos:
+		df_turnos = pd.DataFrame(turnos).copy()
+		df_turnos["Selecionar"] = False
+		df_turnos["Início"] = df_turnos["inicio"].apply(_format_time_value)
+		df_turnos["Final"] = df_turnos["final"].apply(_format_time_value)
+		df_turnos["Situação"] = df_turnos["ativo"].apply(_formatar_status)
+
+		inicio = st.session_state.turno_pagina * PAGE_SIZE
+		fim = inicio + PAGE_SIZE
+		total = len(turnos)
+		st.write(f"Mostrando {inicio + 1} - {min(fim, total)} de {total} registros")
+
+		selecao = st.data_editor(
+			df_turnos[["Selecionar", "descricao", "Início", "Final", "Situação"]].iloc[inicio:fim].reset_index(drop=True),
+			hide_index=True,
+			disabled=["descricao", "Início", "Final", "Situação"],
+			column_config={
+				"Selecionar": st.column_config.CheckboxColumn("Selecionar"),
+				"descricao": st.column_config.TextColumn("Descrição"),
+				"Início": st.column_config.TextColumn("Início"),
+				"Final": st.column_config.TextColumn("Final"),
+				"Situação": st.column_config.TextColumn("Situação"),
+			},
+			key="turnos_grid_turnos",
+		)
+
+		selecionados = selecao[selecao["Selecionar"] == True]
+		if len(selecionados) == 1:
+			idx_paginado = selecionados.index[0]
+			if idx_paginado < len(turnos[inicio:fim]):
+				st.session_state.turno_selecionado = turnos[inicio:fim][idx_paginado]
+		elif len(selecionados) > 1:
+			st.error("Selecione apenas 1 turno por vez.")
+	else:
+		st.info("Nenhum turno cadastrado para este cliente.")
+		st.session_state.turno_selecionado = None
+
+	col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
+	total_paginas = max(1, (len(turnos) + PAGE_SIZE - 1) // PAGE_SIZE)
+	if col_pag1.button("⬅️", disabled=st.session_state.turno_pagina <= 0):
+		st.session_state.turno_pagina -= 1
+		st.rerun()
+	col_pag2.write(f"Página {st.session_state.turno_pagina + 1} de {total_paginas}")
+	if col_pag3.button("➡️", disabled=(st.session_state.turno_pagina + 1) >= total_paginas):
+		st.session_state.turno_pagina += 1
+		st.rerun()
+
+	with st.container():
+		col1, col2, col3, col4 = st.columns(4)
+		if col1.button("Listar"):
+			st.session_state.turno_aba = "Listar"
+			st.rerun()
+		if col2.button("Incluir"):
+			st.session_state.turno_aba = "Incluir"
+			st.rerun()
+		if col3.button("Alterar", disabled=st.session_state.turno_selecionado is None):
+			st.session_state.turno_aba = "Alterar"
+			st.rerun()
+
+		turno_sel = st.session_state.turno_selecionado
+		if turno_sel is None:
+			col4.button("🔒 Desativar", disabled=True)
+		elif turno_sel.get("ativo", True):
+			if col4.button("🔒 Desativar"):
+				try:
+					desativar_turno(turno_sel.get("id"))
+					st.session_state.turno_selecionado = None
+					st.success("Turno desativado com sucesso.")
+					st.rerun()
+				except Exception as e:
+					st.error(f"Erro ao desativar turno: {e}")
+		else:
+			if col4.button("🔓 Reativar"):
+				try:
+					reativar_turno(turno_sel.get("id"))
+					st.session_state.turno_selecionado = None
+					st.success("Turno reativado com sucesso.")
+					st.rerun()
+				except Exception as e:
+					st.error(f"Erro ao reativar turno: {e}")
+
+elif st.session_state.turno_aba == "Incluir":
+	st.subheader("Incluir Turno")
+
+	if st.session_state.turno_cliente_selecionado is None:
+		st.warning("Selecione um cliente antes de incluir um turno.")
+		if st.button("Escolher cliente"):
+			st.session_state.turno_aba = "Listar"
+			st.rerun()
+	else:
+		cliente = st.session_state.turno_cliente_selecionado
+		cliente_id = cliente.get("id") or cliente.get("id_cliente")
+		_render_cliente_banner(cliente, len(listar_turnos(cliente_id)))
+
+		with st.form("form_incluir_turno"):
+			col_esq, col_dir = st.columns(2)
+			with col_esq:
+				descricao = st.text_input("Descrição *", max_chars=120, placeholder="Ex.: 1º Turno").strip()
+				inicio = st.time_input("Início *", value=time(8, 0), step=timedelta(minutes=1))
+			with col_dir:
+				final = st.time_input("Final *", value=time(17, 0), step=timedelta(minutes=1))
+				ativo = st.checkbox("Turno ativo", value=True)
+
+			btn_col1, btn_col2 = st.columns([1, 1])
+			with btn_col1:
+				salvar = st.form_submit_button("Salvar", use_container_width=True)
+			with btn_col2:
+				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+
+			if cancelar:
+				st.session_state.turno_aba = "Listar"
+				st.rerun()
+
+			if salvar:
+				try:
+					if not descricao:
+						raise ValueError("Informe a descrição do turno.")
+					if inicio == final:
+						raise ValueError("Os horários de início e final devem ser diferentes.")
+					if _turno_existe(cliente_id, descricao):
+						raise ValueError("Já existe um turno com essa descrição para este cliente.")
+
+					incluir_turno(
+						descricao,
+						inicio.strftime("%H:%M:%S"),
+						final.strftime("%H:%M:%S"),
+						cliente_id,
+						ativo,
+					)
+					st.success("Turno incluído com sucesso!")
+					st.session_state.turno_selecionado = None
+					st.session_state.turno_aba = "Listar"
+					st.rerun()
+				except Exception as e:
+					st.error(str(e))
+
+elif st.session_state.turno_aba == "Alterar":
+	st.subheader("Alterar Turno")
+
+	if st.session_state.turno_selecionado is None:
+		st.warning("Selecione um turno antes de alterar.")
+		if st.button("Voltar para lista"):
+			st.session_state.turno_aba = "Listar"
+			st.rerun()
+	else:
+		turno = st.session_state.turno_selecionado
+		cliente = st.session_state.turno_cliente_selecionado
+		cliente_id = cliente.get("id") or cliente.get("id_cliente")
+		_render_cliente_banner(cliente, len(listar_turnos(cliente_id)))
+
+		inicio_inicial = _parse_time_value(turno.get("inicio"), time(8, 0))
+		final_inicial = _parse_time_value(turno.get("final"), time(17, 0))
+
+		with st.form("form_alterar_turno"):
+			col_esq, col_dir = st.columns(2)
+			with col_esq:
+				descricao = st.text_input("Descrição *", value=turno.get("descricao", ""), max_chars=120)
+				inicio = st.time_input("Início *", value=inicio_inicial, step=timedelta(minutes=1))
+			with col_dir:
+				final = st.time_input("Final *", value=final_inicial, step=timedelta(minutes=1))
+				ativo = st.checkbox("Turno ativo", value=bool(turno.get("ativo", True)))
+
+			btn_col1, btn_col2 = st.columns([1, 1])
+			with btn_col1:
+				salvar = st.form_submit_button("Salvar", use_container_width=True)
+			with btn_col2:
+				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+
+			if cancelar:
+				st.session_state.turno_aba = "Listar"
+				st.rerun()
+
+			if salvar:
+				try:
+					if not descricao.strip():
+						raise ValueError("Informe a descrição do turno.")
+					if inicio == final:
+						raise ValueError("Os horários de início e final devem ser diferentes.")
+					if _turno_existe(cliente_id, descricao, turno.get("id")):
+						raise ValueError("Já existe um turno com essa descrição para este cliente.")
+
+					alterar_turno(
+						turno.get("id"),
+						descricao.strip(),
+						inicio.strftime("%H:%M:%S"),
+						final.strftime("%H:%M:%S"),
+						ativo,
+					)
+					st.success("Turno alterado com sucesso!")
+					st.session_state.turno_selecionado = None
+					st.session_state.turno_aba = "Listar"
+					st.rerun()
+				except Exception as e:
+					st.error(str(e))
