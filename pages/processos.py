@@ -181,7 +181,7 @@ if st.session_state.proc_aba == "Listar":
     # Se chegou aqui, há um cliente selecionado: mostrar Áreas apenas deste cliente
     cliente = st.session_state.proc_cliente_selecionado
     if cliente and st.session_state.get("role") in ["admin", "supervisor"]:
-        st.success(f"# Áreas da empresa   :point_right: {cliente.get('empresa')}",icon=':material/activity_zone:')
+        st.success(f"# Processos de :point_right: {cliente.get('empresa')}",icon=':material/activity_zone:')
         if st.button("Limpar seleção de cliente"):
             st.session_state.proc_cliente_selecionado = None
             st.rerun()

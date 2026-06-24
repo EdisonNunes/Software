@@ -187,7 +187,7 @@ if st.session_state.equip_aba == "Listar":
     # Se chegou aqui, há um cliente selecionado: mostrar Equipamentos apenas deste cliente
     cliente = st.session_state.equip_cliente_selecionado
     if cliente and st.session_state.get("role") in ["admin", "supervisor"]:
-        st.success(f"# Equipamentos da empresa   :point_right: {cliente.get('empresa')}",icon=':material/precision_manufacturing:')
+        st.success(f"# Equipamentos de :point_right: {cliente.get('empresa')}",icon=':material/precision_manufacturing:')
 
         if st.button("Limpar seleção de cliente"):
             st.session_state.equip_cliente_selecionado = None

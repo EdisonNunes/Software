@@ -180,7 +180,7 @@ if st.session_state.parada_aba == "Listar":
     # Se chegou aqui, há um cliente selecionado: mostrar paradas apenas deste cliente
     cliente = st.session_state.parada_cliente_selecionado
     if cliente and st.session_state.get("role") in ["admin", "supervisor"]:
-        st.success(f"# Paradas de Processo :point_right: {cliente.get('empresa')}",icon=':material/conveyor_belt:')
+        st.success(f"# Paradas de :point_right: {cliente.get('empresa')}",icon=':material/conveyor_belt:')
         if st.button("Limpar seleção de cliente"):
             st.session_state.parada_cliente_selecionado = None
             st.rerun()
