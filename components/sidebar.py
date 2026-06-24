@@ -18,7 +18,7 @@ def render_app_sidebar():
         try:
             st.image("Imagens/Logo1.png", width="stretch")
         except TypeError:
-            st.image("Imagens/Logo1.png", use_column_width=True)
+            st.image("Imagens/Logo1.png", use_container_width=True)
         st.divider()
 
         st.caption(f"👤 {st.session_state.get('user_name', '')}")
