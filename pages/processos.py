@@ -2,6 +2,7 @@
 # Gerente e Funcionário veem apenas as áreas da própria empresa
 
 import streamlit as st
+import streamlit.components.v1 as components
 from supabase import create_client, Client
 import os
 import pandas as pd
@@ -212,27 +213,13 @@ if st.session_state.proc_aba == "Listar":
                     "Selecionar"
                 ),
                 "codigo": st.column_config.TextColumn(
-        paleta = _banner_palette()
-        st.markdown(
-            f"""
-            <div style="
-                border: 1px solid {paleta['banner_border']};
-                background: linear-gradient(135deg, {paleta['banner_bg']}, {paleta['banner_bg_soft']});
-                border-radius: 18px;
-                padding: 18px 20px;
-                margin: 0.25rem 0 1rem 0;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-            ">
-                <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: {paleta['label_color']}; font-weight: 800;">
-                    Cliente selecionado
-                </div>
-                <div style="font-size: 1.45rem; font-weight: 800; color: {paleta['title_color']}; margin-top: 0.15rem;">
-                    {cliente.get('empresa', '')}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        
+                    "Código"
+                ),
+                "descricao": st.column_config.TextColumn(
+                    "Nome"
+                ),
+            },
+            key="processos_grid_procs",
         )
 
         # Lógica de Seleção
@@ -303,8 +290,8 @@ elif st.session_state.proc_aba == "Incluir":
         with st.form("form_incluir_proc"):
             # Campo não editável com o cliente selecionado
             # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
-            codigo = st.text_input("Código", max_chars=50)
-            descricao = st.text_input("Descrição", max_chars=255)
+            codigo = st.text_input("Código / Identificação", max_chars=50)
+            descricao = st.text_input("Nome do Processo", max_chars=255)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -353,8 +340,8 @@ elif st.session_state.proc_aba == "Alterar":
         with st.form("form_alterar_proc"):
             col1, col2 = st.columns([2, 1])
             with col1:
-                codigo = st.text_input("Código", value=proc.get('codigo', ''), max_chars=50)
-                descricao = st.text_input("Descrição", value=proc.get('descricao', ''), max_chars=255)
+                codigo = st.text_input("Código / Identificação", value=proc.get('codigo', ''), max_chars=50)
+                descricao = st.text_input("Nome do Processo", value=proc.get('descricao', ''), max_chars=255)
                 
                 # Ações
             btn_col1, btn_col2 = st.columns([1, 1])

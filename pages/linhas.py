@@ -86,7 +86,7 @@ render_app_sidebar()
     
 render_top_menu()
 
-st.info(f'# Cadastro de Linhas de Produção',icon=':material/conveyor_belt:')
+st.info(f'# Cadastro de Linhas Produtivas',icon=':material/conveyor_belt:')
 
 ensure_session_state(
     {
@@ -278,10 +278,6 @@ elif st.session_state.linha_aba == "Incluir":
             st.rerun()
     else:
         cliente = st.session_state.linha_cliente_selecionado
-        # Exibir via componente HTML para garantir que estilo seja aplicado
-        html = f"""
-        <style>
-          .selected-client {{ color: orange !important; font-size:28px !important; font-weight:700 !important; margin:6px 0; }}
         paleta = _banner_palette()
         st.markdown(
             f"""
@@ -308,8 +304,8 @@ elif st.session_state.linha_aba == "Incluir":
         with st.form("form_incluir_linha"):
             # Campo não editável com o cliente selecionado
             # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
-            codigo = st.text_input("Código", max_chars=50)
-            descricao = st.text_input("Descrição", max_chars=255)
+            codigo = st.text_input("Código / Identificação", max_chars=50)
+            descricao = st.text_input("Nome da Linha / Setor", max_chars=255)
             responsavel = st.text_input("Responsável", max_chars=255)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
@@ -359,8 +355,8 @@ elif st.session_state.linha_aba == "Alterar":
         with st.form("form_alterar_linha"):
             col1, col2 = st.columns([2, 1])
             with col1:
-                codigo = st.text_input("Código", value=linha.get('codigo', ''), max_chars=50)
-                descricao = st.text_input("Descrição", value=linha.get('descricao', ''), max_chars=255)
+                codigo = st.text_input("Código / Identificação", value=linha.get('codigo', ''), max_chars=50)
+                descricao = st.text_input("Nome da Linha / Setor", value=linha.get('descricao', ''), max_chars=255)
                 responsavel = st.text_input("Responsável", value=linha.get('responsavel', ''), max_chars=255)
                 # Ações
             btn_col1, btn_col2 = st.columns([1, 1])

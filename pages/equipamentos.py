@@ -219,10 +219,10 @@ if st.session_state.equip_aba == "Listar":
                     "Selecionar"
                 ),
                 "codigo": st.column_config.TextColumn(
-                    "Código"
+                    "Tag / Código"
                 ),
                 "descricao": st.column_config.TextColumn(
-                    "Descrição"
+                    "Nome do Equipamento"
                 ),
                   "classif": st.column_config.TextColumn(
                     "Classificação"
@@ -291,7 +291,7 @@ elif st.session_state.equip_aba == "Incluir":
         processos = listar_todos_dados_procs(cliente_id)
 
         if not linhas:
-            st.warning("Cadastre ao menos uma linha antes de incluir equipamento.")
+            st.warning("Cadastre ao menos uma linha descriçãoantes de incluir equipamento.")
             if st.button("Ir para módulo de Linhas"):
                 st.switch_page("pages/linhas.py")
             st.stop()
@@ -343,13 +343,13 @@ elif st.session_state.equip_aba == "Incluir":
             st.markdown("#### Identificação")
             col_id_1, col_id_2 = st.columns(2)
             with col_id_1:
-                codigo = st.text_input("Código", max_chars=50, placeholder="Ex.: EQP-001")
+                codigo = st.text_input("Tag / Código", max_chars=50, placeholder="Ex.: EQP-001")
             with col_id_2:
                 classif = st.selectbox("Classificação", ["Principal", "Secundário"])
 
-            descricao = st.text_input("Descrição", max_chars=255, placeholder="Nome descritivo do equipamento")
+            descricao = st.text_input("Nome do Equipamento", max_chars=255, placeholder="Nome descritivo do equipamento")
 
-            st.markdown("#### Estrutura")
+            st.markdown("#### Linhas de Produção")
             col_estr_1, col_estr_2 = st.columns(2)
             with col_estr_1:
                 linha_id = st.selectbox(
@@ -364,14 +364,14 @@ elif st.session_state.equip_aba == "Incluir":
                     format_func=lambda item_id: processo_por_id.get(item_id, ""),
                 )
 
-            st.markdown("#### Capacidade")
+            st.markdown("#### Capacidade Nominal")
             col_cap_1, col_cap_2, col_cap_3 = st.columns([2, 1, 1])
             with col_cap_1:
                 capacidade = st.number_input("Capacidade", min_value=0.0, step=0.1, format="%.2f")
             with col_cap_2:
                 unidade_capac = st.selectbox("Unidade", options=unidades_capac)
             with col_cap_3:
-                unidade_tempo = st.selectbox("Tempo", options=unidades_tempo)
+                unidade_tempo = st.selectbox("Período", options=unidades_tempo)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -463,7 +463,7 @@ elif st.session_state.equip_aba == "Alterar":
             st.markdown("#### Identificação")
             col_id_1, col_id_2 = st.columns(2)
             with col_id_1:
-                codigo = st.text_input("Código", value=equipamento.get('codigo', ''), max_chars=50)
+                codigo = st.text_input("Tag / Código", value=equipamento.get('codigo', ''), max_chars=50)
             with col_id_2:
                 classif = st.selectbox(
                     "Classificação",
@@ -471,9 +471,9 @@ elif st.session_state.equip_aba == "Alterar":
                     index=0 if classif_atual == "Principal" else 1,
                 )
 
-            descricao = st.text_input("Descrição", value=equipamento.get('descricao', ''), max_chars=255)
+            descricao = st.text_input("Nome do Equipamento", value=equipamento.get('descricao', ''), max_chars=255)
 
-            st.markdown("#### Estrutura")
+            st.markdown("#### Linhas de Produção")
             col_estr_1, col_estr_2 = st.columns(2)
             with col_estr_1:
                 linha_id = st.selectbox(
@@ -490,7 +490,7 @@ elif st.session_state.equip_aba == "Alterar":
                     format_func=lambda item_id: processo_por_id.get(item_id, ""),
                 )
 
-            st.markdown("#### Capacidade")
+            st.markdown("#### Capacidade Nominal")
             col_cap_1, col_cap_2, col_cap_3 = st.columns([2, 1, 1])
             with col_cap_1:
                 capacidade = st.number_input(
@@ -508,7 +508,7 @@ elif st.session_state.equip_aba == "Alterar":
                 )
             with col_cap_3:
                 unidade_tempo = st.selectbox(
-                    "Tempo",
+                    "Período",
                     options=unidades_tempo,
                     index=unidades_tempo.index(unidade_tempo_atual),
                 )

@@ -329,10 +329,10 @@ elif st.session_state.parada_aba == "Incluir":
         with st.form("form_incluir_parada"):
             # Campo não editável com o cliente selecionado
             # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
-            codigo = st.text_input("Código", max_chars=50)
-            descricao = st.text_input("Descrição", max_chars=255)
+            codigo = st.text_input("Código da Parada", max_chars=50)
+            descricao = st.text_input("Descrição da Parada", max_chars=255)
             categorias_oee = ["Disponibilidade", "Performance", "Qualidade"]
-            categoria_oee = st.selectbox("Categoria OEE", categorias_oee)
+            categoria_oee = st.selectbox("Categoria Aplicada ao OEE", categorias_oee)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -381,14 +381,14 @@ elif st.session_state.parada_aba == "Alterar":
         with st.form("form_alterar_parada"):
             col1, col2 = st.columns([2, 1])
             with col1:
-                codigo = st.text_input("Código", value=parada.get('codigo', ''), max_chars=50)
-                descricao = st.text_input("Descrição", value=parada.get('descricao', ''), max_chars=255)
+                codigo = st.text_input("Código da Parada", value=parada.get('codigo', ''), max_chars=50)
+                descricao = st.text_input("Descrição da Parada", value=parada.get('descricao', ''), max_chars=255)
                 categorias_oee = ["Disponibilidade", "Performance", "Qualidade"]
                 categoria_atual = parada.get("categoria_oee") or parada.get("codigo_oee")
                 if categoria_atual not in categorias_oee:
                     categoria_atual = categorias_oee[0]
                 categoria_oee = st.selectbox(
-                    "Categoria OEE",
+                    "Categoria Aplicada ao OEE",
                     categorias_oee,
                     index=categorias_oee.index(categoria_atual),
                 )

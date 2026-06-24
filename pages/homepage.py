@@ -126,7 +126,7 @@ with c1:
         st.markdown("**Turnos**")
         st.page_link(
             "pages/turnos.py",
-            help='Gerencie os turnos',
+            help='Estabeleça os turnos de trabalho',
             label="Abrir"
         )
 

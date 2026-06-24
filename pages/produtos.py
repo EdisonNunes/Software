@@ -265,8 +265,6 @@ elif st.session_state.sku_aba == "Incluir":
     else:
         cliente = st.session_state.sku_cliente_selecionado
         # Exibir via componente HTML para garantir que estilo seja aplicado
-        html = f"""
-        <style>
         paleta = _banner_palette()
         st.markdown(
             f"""
@@ -300,15 +298,15 @@ elif st.session_state.sku_aba == "Incluir":
             with col1:
                 # Campo não editável com o cliente selecionado
                 st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
-                codigo = st.text_input("Código", max_chars=50)
-                descricao = st.text_input("Descrição", max_chars=255)
+                codigo = st.text_input("Código / Identificação", max_chars=50)
+                descricao = st.text_input("Nome do Produto", max_chars=255)
                 familia = st.text_input("Família")
                 # area_produtiva = st.selectbox("Área Produtiva", options=[area.get('descricao') for area in lista_areas], width=300)
                 area_produtiva = st.selectbox("Área Produtiva", options=[area.get('descricao') for area in lista_areas])
                 area_embalagem = st.text_input("Área de Embalagem")
 
             with col2:
-                lote_padrao = st.number_input("Lote Padrão", min_value=0.0, step=1.0, format="%f")
+                lote_padrao = st.number_input("Lote Padrão [Quantidade]", min_value=0.0, step=1.0, format="%f")
                 area_rota = st.text_input("Área Rota")
                 #equipamento = st.selectbox("Equipamento", options=[equipamento.get('descricao') for equipamento in lista_equipamentos])
                 #classificacao = st.text_input("Classificação")
@@ -406,13 +404,13 @@ elif st.session_state.sku_aba == "Alterar":
         with st.form("form_alterar_produto"):
             col1, col2 = st.columns([1, 1])
             with col1:
-                codigo = st.text_input("Código", value=produto.get('codigo', ''), max_chars=50)
-                descricao = st.text_input("Descrição", value=produto.get('descricao', ''), max_chars=255)
+                codigo = st.text_input("Código / Identificação", value=produto.get('codigo', ''), max_chars=50)
+                descricao = st.text_input("Nome do Produto", value=produto.get('descricao', ''), max_chars=255)
                 familia = st.text_input("Família", value=produto.get('familia', ''))
                 area_produtiva = st.selectbox("Área Produtiva", options=opcoes_areas, index=indice_area)
                 area_embalagem = st.text_input("Área de Embalagem", value=produto.get('area_embalagem', ''))
             with col2:
-                lote_padrao = st.number_input("Lote Padrão", value=float(produto.get('lote_padrao') or 0.0), min_value=0.0, step=1.0, format="%f")
+                lote_padrao = st.number_input("Lote Padrão [Quantidade]", value=float(produto.get('lote_padrao') or 0.0), min_value=0.0, step=1.0, format="%f")
                 area_rota = st.text_input("Área Rota", value=produto.get('area_rota', ''))
                 equipamento = st.selectbox("Equipamento", options=opcoes_equipamentos, index=indice_equipamento)
                 #classificacao = st.text_input("Classificação", value=produto.get('classificacao', ''))
