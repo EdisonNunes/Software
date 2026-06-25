@@ -76,6 +76,34 @@ def _banner_palette() -> dict[str, str]:
 	}
 
 
+def _render_cliente_banner(cliente: dict, total_registros: int) -> None:
+    paleta = _banner_palette()
+    st.markdown(
+        f"""
+        <div style="
+            border: 1px solid {paleta['banner_border']};
+            background: linear-gradient(135deg, {paleta['banner_bg']}, {paleta['banner_bg_soft']});
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin: 0.25rem 0 1rem 0;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+        ">
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: {paleta['label_color']}; font-weight: 800;">
+                Cliente selecionado
+            </div>
+            <div style="font-size: 1.45rem; font-weight: 800; color: {paleta['title_color']}; margin-top: 0.15rem;">
+                {cliente.get('empresa', '')}
+            </div>
+            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:0.65rem; color:{paleta['body_color']}; font-size:0.95rem; font-weight:600;">
+                <span><strong>Cidade:</strong> {cliente.get('cidade', '-') or '-'}</span>
+                <span><strong>Registros:</strong> {total_registros}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 if not st.session_state.get("authenticated", False):
     st.switch_page("main.py")
 
@@ -175,13 +203,18 @@ if st.session_state.sku_aba == "Listar":
 
     # Se chegou aqui, há um cliente selecionado: mostrar produtos apenas deste cliente
     cliente = st.session_state.sku_cliente_selecionado
+
+    if cliente:
+        produtos = listar_produtos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
+    else:
+        produtos = []
+
     if cliente and st.session_state.get("role") in ["admin", "supervisor"]:
-        st.success(f"## Produtos de   :point_right: {cliente.get('empresa')}",icon=':material/thermostat:')
+        _render_cliente_banner(cliente, len(produtos))
         if st.button("Limpar seleção de cliente"):
             st.session_state.sku_cliente_selecionado = None
             st.rerun()
-    
-    produtos = listar_produtos(filtro_produto=cliente.get('id') or cliente.get('id_cliente'))
+
     total = len(produtos)
     inicio = st.session_state.sku_pagina * PAGE_SIZE
     fim = inicio + PAGE_SIZE
