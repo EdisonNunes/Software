@@ -12,6 +12,7 @@ from pages.crud import listar_areas, listar_todos_dados_areas, incluir_area, alt
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
 from components.session_state import ensure_session_state
+from components.page_banner import render_page_title_banner, render_cliente_banner
 
 
 def _hex_to_rgb(color_hex: str, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
@@ -79,31 +80,7 @@ def _banner_palette() -> dict[str, str]:
 
 
 def _render_cliente_banner(cliente: dict, total_registros: int) -> None:
-    paleta = _banner_palette()
-    st.markdown(
-        f"""
-        <div style="
-            border: 1px solid {paleta['banner_border']};
-            background: linear-gradient(135deg, {paleta['banner_bg']}, {paleta['banner_bg_soft']});
-            border-radius: 18px;
-            padding: 18px 20px;
-            margin: 0.25rem 0 1rem 0;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-        ">
-            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: {paleta['label_color']}; font-weight: 800;">
-                Cliente selecionado
-            </div>
-            <div style="font-size: 1.45rem; font-weight: 800; color: {paleta['title_color']}; margin-top: 0.15rem;">
-                {cliente.get('empresa', '')}
-            </div>
-            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:0.65rem; color:{paleta['body_color']}; font-size:0.95rem; font-weight:600;">
-                <span><strong>Cidade:</strong> {cliente.get('cidade', '-') or '-'}</span>
-                <span><strong>Registros:</strong> {total_registros}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    render_cliente_banner(cliente, total_registros)
 
 
 if not st.session_state.get("authenticated", False):
@@ -113,7 +90,7 @@ render_app_sidebar()
     
 render_top_menu()
 
-st.info(f'# Cadastro de Áreas de Produção',icon=':material/activity_zone:')
+render_page_title_banner("Cadastro de Áreas de Produção", icon_html="&#127970;")
 
 ensure_session_state(
     {

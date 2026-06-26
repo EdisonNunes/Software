@@ -7,6 +7,7 @@ import streamlit as st
 from components.session_state import ensure_session_state
 from components.sidebar import render_app_sidebar
 from components.top_menu import render_top_menu
+from components.page_banner import render_cliente_banner
 from pages.theme import read_streamlit_theme
 from pages import crud as crud_module
 from pages.crud import listar_clientes, supabase
@@ -224,31 +225,7 @@ def _cards_palette() -> dict[str, str]:
 
 
 def _render_cliente_banner(cliente: dict, total_metas: int) -> None:
-	paleta = _banner_palette()
-	st.markdown(
-		f"""
-		<div style="
-			border: 1px solid {paleta['banner_border']};
-			background: linear-gradient(135deg, {paleta['banner_bg']}, {paleta['banner_bg_soft']});
-			border-radius: 18px;
-			padding: 18px 20px;
-			margin: 0.25rem 0 1rem 0;
-			box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-		">
-			<div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: {paleta['label_color']}; font-weight: 800;">
-				Cliente selecionado
-			</div>
-			<div style="font-size: 1.45rem; font-weight: 800; color: {paleta['title_color']}; margin-top: 0.15rem;">
-				{cliente.get('empresa', '')}
-			</div>
-			<div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:0.65rem; color:{paleta['body_color']}; font-size:0.95rem; font-weight:600;">
-				<span><strong>Cidade:</strong> {cliente.get('cidade', '-') or '-'}</span>
-				<span><strong>Metas:</strong> {total_metas}</span>
-			</div>
-		</div>
-		""",
-		unsafe_allow_html=True,
-	)
+	render_cliente_banner(cliente, total_metas, total_label="Metas")
 
 
 def _eh_escala_fmea(meta: dict) -> bool:
