@@ -27,7 +27,7 @@ def _render_sidebar_logo():
         return
 
     try:
-        st.image(logo_path, use_container_width=True)
+        st.image(logo_path, width='stretch')
     except TypeError:
         # Compatibilidade com versões antigas do Streamlit.
         st.image(logo_path, width=220)
