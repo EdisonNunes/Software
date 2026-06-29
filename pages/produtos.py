@@ -81,6 +81,13 @@ def _render_cliente_banner(cliente: dict, total_registros: int) -> None:
     render_cliente_banner(cliente, total_registros)
 
 
+def _mensagem_erro_salvar_produto(erro: Exception, acao: str) -> str:
+    mensagem = str(erro)
+    if "duplicate key value violates unique constraint" in mensagem:
+        return "Código já existente!"
+    return f"Erro ao {acao} produto: {erro}"
+
+
 if not st.session_state.get("authenticated", False):
     st.switch_page("main.py")
 
@@ -368,7 +375,7 @@ elif st.session_state.sku_aba == "Incluir":
                     st.session_state.sku_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao incluir produto: {e}")
+                    st.error(_mensagem_erro_salvar_produto(e, "incluir"))
 
 elif st.session_state.sku_aba == "Alterar":
     st.subheader("Alterar Produto")
@@ -469,7 +476,7 @@ elif st.session_state.sku_aba == "Alterar":
                     st.session_state.sku_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao alterar produto: {e}")
+                    st.error(_mensagem_erro_salvar_produto(e, "alterar"))
 
 elif st.session_state.sku_aba == "Excluir":
     st.subheader("Excluir Produto")

@@ -88,6 +88,13 @@ def _banner_palette() -> dict[str, str]:
 	}
 
 
+def _mensagem_erro_salvar_equipamento(erro: Exception, acao: str) -> str:
+    mensagem = str(erro)
+    if "duplicate key value violates unique constraint" in mensagem:
+        return "Código já existente!"
+    return f"Erro ao {acao} equipamento: {erro}"
+
+
 def _render_cliente_banner(cliente: dict, total_registros: int) -> None:
     render_cliente_banner(cliente, total_registros)
 
@@ -410,7 +417,7 @@ elif st.session_state.equip_aba == "Incluir":
                     st.session_state.equip_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao incluir equipamento: {e}")
+                    st.error(_mensagem_erro_salvar_equipamento(e, "incluir"))
 
 elif st.session_state.equip_aba == "Alterar":
     st.subheader("Alterar Equipamento")
@@ -548,7 +555,7 @@ elif st.session_state.equip_aba == "Alterar":
                     st.session_state.equip_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao alterar Equipamento: {e}")
+                    st.error(_mensagem_erro_salvar_equipamento(e, "alterar"))
 
 elif st.session_state.equip_aba == "Excluir":
     st.subheader("Excluir Equipamento")

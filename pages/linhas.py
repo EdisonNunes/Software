@@ -80,6 +80,13 @@ def _banner_palette() -> dict[str, str]:
 	}
 
 
+def _mensagem_erro_salvar_linha(erro: Exception, acao: str) -> str:
+    mensagem = str(erro)
+    if "duplicate key value violates unique constraint" in mensagem:
+        return "Código já existente!"
+    return f"Erro ao {acao} linha: {erro}"
+
+
 def _render_cliente_banner(cliente: dict, total_registros: int) -> None:
     render_cliente_banner(cliente, total_registros)
 
@@ -340,7 +347,7 @@ elif st.session_state.linha_aba == "Incluir":
                     st.session_state.linha_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao incluir linha: {e}")
+                    st.error(_mensagem_erro_salvar_linha(e, "incluir"))
 
 elif st.session_state.linha_aba == "Alterar":
     st.subheader("Alterar Linha")
@@ -390,7 +397,7 @@ elif st.session_state.linha_aba == "Alterar":
                     st.session_state.linha_aba = "Listar"
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erro ao alterar linha: {e}")
+                    st.error(_mensagem_erro_salvar_linha(e, "alterar"))
 
 elif st.session_state.linha_aba == "Excluir":
     st.subheader("Excluir Linha")
