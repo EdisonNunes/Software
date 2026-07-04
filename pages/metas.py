@@ -304,7 +304,7 @@ def _render_meta_cards(metas: list[dict], selected_id: str | None) -> dict | Non
 				if st.button(
 					"Alterar valor",
 					key=f"meta_alterar_{meta.get('id')}",
-					use_container_width=True,
+					width='stretch',
 				):
 					meta_escolhida = meta
 
@@ -465,9 +465,9 @@ elif st.session_state.metas_aba == "Alterar":
 
 			btn_col1, btn_col2 = st.columns([1, 1])
 			with btn_col1:
-				salvar = st.form_submit_button("Salvar", use_container_width=True)
+				salvar = st.form_submit_button("Salvar", width='stretch')
 			with btn_col2:
-				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+				cancelar = st.form_submit_button("Cancelar", width='stretch')
 
 			if cancelar:
 				st.session_state.metas_aba = "Listar"

@@ -8,7 +8,15 @@ import pandas as pd
 
 from pages.theme import read_streamlit_theme
 from pages.crud import listar_clientes
-from pages.crud import listar_paradas, listar_todos_dados_paradas, incluir_parada, alterar_parada, desativar_parada, reativar_parada
+from pages.crud import (
+    listar_paradas,
+    listar_todos_dados_paradas,
+    incluir_parada,
+    alterar_parada,
+    desativar_parada,
+    reativar_parada,
+    listar_opcoes_paradas,
+)
 
 from components.top_menu import render_top_menu
 from components.sidebar import render_app_sidebar
@@ -193,6 +201,7 @@ if st.session_state.parada_aba == "Listar":
     cliente = st.session_state.parada_cliente_selecionado
     if cliente:
         paradas = listar_paradas(cliente.get('id') or cliente.get('id_cliente'))
+        # print(f"DEBUG: {len(paradas)} paradas carregadas para o cliente {cliente.get('empresa')}")
     else:
         paradas = []
 
@@ -211,13 +220,16 @@ if st.session_state.parada_aba == "Listar":
         paradas_paginados = paradas[inicio:fim]
         df_exibicao = pd.DataFrame(paradas_paginados).copy()
         df_exibicao["Selecionar"] = False
+
+        if "tipo" not in df_exibicao.columns:
+            df_exibicao["tipo"] = ""
         # df_exibicao["id_produto"] = df_exibicao["id_produto"].astype(str)
 
         # Colunas e Configuração
         df_exibicao["situacao"] = df_exibicao["ativo"].apply(
             lambda v: "🟢 Ativa" if v else "🔴 Inativa"
         )
-        cols_exibicao = ["Selecionar", "codigo", "descricao", "categoria_oee", "situacao"]
+        cols_exibicao = ["Selecionar", "codigo", "descricao", "tipo", "categoria_oee", "situacao"]
         
         selecao = st.data_editor(
             df_exibicao[cols_exibicao].reset_index(drop=True),
@@ -232,6 +244,9 @@ if st.session_state.parada_aba == "Listar":
                 "descricao": st.column_config.TextColumn(
                     "Descrição"
                 ),
+                "tipo": st.column_config.TextColumn(
+                    "Tipo de Parada"
+                ),
                 "categoria_oee": st.column_config.TextColumn(
                     "Categoria OEE"
                 ),
@@ -239,7 +254,7 @@ if st.session_state.parada_aba == "Listar":
                     "Situação"
                 ),
             },
-            key="paradas_grid_paradas"
+            key="paradas_grid_paradas_v2"
         )
 
         # Lógica de Seleção
@@ -316,6 +331,10 @@ elif st.session_state.parada_aba == "Incluir":
             st.rerun()
     else:
         cliente = st.session_state.parada_cliente_selecionado
+        cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        opcoes_paradas = listar_opcoes_paradas(cliente_id)
+        tipos_parada = opcoes_paradas.get("tipos") or ["Planejada", "Não Planejada"]
+        categorias_oee = opcoes_paradas.get("categorias_oee") or ["Disponibilidade", "Performance", "Qualidade"]
         paleta = _banner_palette()
         st.markdown(
             f"""
@@ -344,7 +363,7 @@ elif st.session_state.parada_aba == "Incluir":
             # st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
             codigo = st.text_input("Código da Parada", max_chars=50)
             descricao = st.text_input("Descrição da Parada", max_chars=255)
-            categorias_oee = ["Disponibilidade", "Performance", "Qualidade"]
+            tipo = st.selectbox("Tipo da Parada", tipos_parada)
             categoria_oee = st.selectbox("Categoria Aplicada ao OEE", categorias_oee)
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
@@ -361,12 +380,8 @@ elif st.session_state.parada_aba == "Incluir":
                 st.rerun()
 
             if salvar:
-                cliente_id = (
-                                cliente.get("id")
-                                or cliente.get("id_cliente")
-)
                 try:
-                    incluir_parada(codigo, descricao, categoria_oee, cliente_id)
+                    incluir_parada(codigo, descricao, tipo, categoria_oee, cliente_id)
                     st.success("Parada incluída com sucesso!")
                     # Limpar seleção de parada e voltar para listagem
                     st.session_state.parada_selecionada = None
@@ -386,6 +401,10 @@ elif st.session_state.parada_aba == "Alterar":
     else:
         parada = st.session_state.parada_selecionada
         cliente = st.session_state.parada_cliente_selecionado
+        cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        opcoes_paradas = listar_opcoes_paradas(cliente_id)
+        tipos_parada = opcoes_paradas.get("tipos") or ["Planejada", "Não Planejada"]
+        categorias_oee = opcoes_paradas.get("categorias_oee") or ["Disponibilidade", "Performance", "Qualidade"]
 
         # Mostrar cliente não editável
         st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
@@ -396,7 +415,14 @@ elif st.session_state.parada_aba == "Alterar":
             with col1:
                 codigo = st.text_input("Código da Parada", value=parada.get('codigo', ''), max_chars=50)
                 descricao = st.text_input("Descrição da Parada", value=parada.get('descricao', ''), max_chars=255)
-                categorias_oee = ["Disponibilidade", "Performance", "Qualidade"]
+                tipo_atual = parada.get("tipo")
+                if tipo_atual not in tipos_parada:
+                    tipo_atual = tipos_parada[0]
+                tipo = st.selectbox(
+                    "Tipo de Parada",
+                    tipos_parada,
+                    index=tipos_parada.index(tipo_atual),
+                )
                 categoria_atual = parada.get("categoria_oee") or parada.get("codigo_oee")
                 if categoria_atual not in categorias_oee:
                     categoria_atual = categorias_oee[0]
@@ -418,14 +444,9 @@ elif st.session_state.parada_aba == "Alterar":
                 st.rerun()
 
             if salvar:
-                cliente_id = (
-                    cliente.get("id")
-                    or cliente.get("id_cliente")
-                )
-
                 try:
                     parada_id = parada.get('id')
-                    alterar_parada(parada_id, codigo, descricao, categoria_oee)
+                    alterar_parada(parada_id, codigo, descricao, tipo, categoria_oee)
                     st.success("Parada alterada com sucesso!")
                     st.session_state.parada_selecionada = None
                     st.session_state.parada_aba = "Listar"

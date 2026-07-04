@@ -16,6 +16,8 @@ from pages.crud import (
     excluir_equipamento,
     listar_todos_dados_linhas,
     listar_todos_dados_procs,
+    listar_unidades,
+    listar_opcoes_classificacao_equipamento,
 )
 
 from components.top_menu import render_top_menu
@@ -299,6 +301,7 @@ elif st.session_state.equip_aba == "Incluir":
     else:
         cliente = st.session_state.equip_cliente_selecionado
         cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        opcoes_classif = listar_opcoes_classificacao_equipamento(cliente_id)
         linhas = listar_todos_dados_linhas(cliente_id)
         processos = listar_todos_dados_procs(cliente_id)
 
@@ -326,8 +329,18 @@ elif st.session_state.equip_aba == "Incluir":
         }
         opcoes_linha = list(linha_por_id.keys())
         opcoes_processo = list(processo_por_id.keys())
-        unidades_capac = ["kg", "litros", "unidades"]
-        unidades_tempo = ["min", "horas", "dia", "mes"]
+        unidades_capac = listar_unidades(["Massa", "Volume", "Quantidade", "Produção"])
+        unidades_tempo = listar_unidades("Tempo")
+
+        if not unidades_capac or not unidades_tempo:
+            st.warning("Cadastre unidades de capacidade e tempo antes de incluir equipamento.")
+            if st.button("Voltar para lista"):
+                st.session_state.equip_aba = "Listar"
+                st.rerun()
+            st.stop()
+
+        opcoes_unidades_capac = [item.get("id") for item in unidades_capac]
+        opcoes_unidades_tempo = [item.get("id") for item in unidades_tempo]
 
         paleta = _banner_palette()
         st.markdown(
@@ -357,7 +370,7 @@ elif st.session_state.equip_aba == "Incluir":
             with col_id_1:
                 codigo = st.text_input("Tag / Código", max_chars=50, placeholder="Ex.: EQP-001")
             with col_id_2:
-                classif = st.selectbox("Classificação", ["Principal", "Secundário"])
+                classif = st.selectbox("Classificação", opcoes_classif)
 
             descricao = st.text_input("Nome do Equipamento", max_chars=255, placeholder="Nome descritivo do equipamento")
 
@@ -381,9 +394,17 @@ elif st.session_state.equip_aba == "Incluir":
             with col_cap_1:
                 capacidade = st.number_input("Capacidade", min_value=0.0, step=0.1, format="%.2f")
             with col_cap_2:
-                unidade_capac = st.selectbox("Unidade", options=unidades_capac)
+                unidade_capac = st.selectbox(
+                    "Unidade",
+                    options=opcoes_unidades_capac,
+                    format_func=lambda item_id: next((f"{u.get('descricao')} ({u.get('codigo')})" for u in unidades_capac if u.get("id") == item_id), ""),
+                )
             with col_cap_3:
-                unidade_tempo = st.selectbox("Período", options=unidades_tempo)
+                unidade_tempo = st.selectbox(
+                    "Período",
+                    options=opcoes_unidades_tempo,
+                    format_func=lambda item_id: next((f"{u.get('descricao')} ({u.get('codigo')})" for u in unidades_tempo if u.get("id") == item_id), ""),
+                )
 
            # Botões lado-a-lado: Salvar e Sair sem Salvar
             btn_col1, btn_col2 = st.columns([1, 1])
@@ -431,6 +452,7 @@ elif st.session_state.equip_aba == "Alterar":
         equipamento = st.session_state.equip_selecionada
         cliente = st.session_state.equip_cliente_selecionado
         cliente_id = cliente.get("id") or cliente.get("id_cliente")
+        opcoes_classif = listar_opcoes_classificacao_equipamento(cliente_id)
         linhas = listar_todos_dados_linhas(cliente_id)
         processos = listar_todos_dados_procs(cliente_id)
 
@@ -453,8 +475,18 @@ elif st.session_state.equip_aba == "Alterar":
         }
         opcoes_linha = list(linha_por_id.keys())
         opcoes_processo = list(processo_por_id.keys())
-        unidades_capac = ["kg", "litros", "unidades"]
-        unidades_tempo = ["min", "horas", "dia", "mes"]
+        unidades_capac = listar_unidades(["Massa", "Volume", "Quantidade", "Produção"])
+        unidades_tempo = listar_unidades("Tempo")
+
+        if not unidades_capac or not unidades_tempo:
+            st.warning("Cadastre unidades de capacidade e tempo antes de alterar equipamento.")
+            if st.button("Voltar para lista"):
+                st.session_state.equip_aba = "Listar"
+                st.rerun()
+            st.stop()
+
+        opcoes_unidades_capac = [item.get("id") for item in unidades_capac]
+        opcoes_unidades_tempo = [item.get("id") for item in unidades_tempo]
 
         linha_id_atual = equipamento.get("linha")
         processo_id_atual = equipamento.get("processo")
@@ -463,9 +495,14 @@ elif st.session_state.equip_aba == "Alterar":
         if processo_id_atual not in opcoes_processo:
             processo_id_atual = opcoes_processo[0]
 
-        unidade_capac_atual = equipamento.get("unidade_capac") if equipamento.get("unidade_capac") in unidades_capac else unidades_capac[0]
-        unidade_tempo_atual = equipamento.get("unidade_tempo") if equipamento.get("unidade_tempo") in unidades_tempo else unidades_tempo[0]
-        classif_atual = equipamento.get("classif") if equipamento.get("classif") in ["Principal", "Secundário"] else "Principal"
+        unidade_capac_atual = equipamento.get("unidade_capacidade_id")
+        if unidade_capac_atual not in opcoes_unidades_capac:
+            unidade_capac_atual = opcoes_unidades_capac[0]
+
+        unidade_tempo_atual = equipamento.get("unidade_tempo_id")
+        if unidade_tempo_atual not in opcoes_unidades_tempo:
+            unidade_tempo_atual = opcoes_unidades_tempo[0]
+        classif_atual = equipamento.get("classif") if equipamento.get("classif") in opcoes_classif else opcoes_classif[0]
 
         # Mostrar cliente não editável
         st.text_input("Cliente", value=cliente.get('empresa'), disabled=True)
@@ -479,8 +516,8 @@ elif st.session_state.equip_aba == "Alterar":
             with col_id_2:
                 classif = st.selectbox(
                     "Classificação",
-                    ["Principal", "Secundário"],
-                    index=0 if classif_atual == "Principal" else 1,
+                    opcoes_classif,
+                    index=opcoes_classif.index(classif_atual),
                 )
 
             descricao = st.text_input("Nome do Equipamento", value=equipamento.get('descricao', ''), max_chars=255)
@@ -508,21 +545,23 @@ elif st.session_state.equip_aba == "Alterar":
                 capacidade = st.number_input(
                     "Capacidade",
                     min_value=0.0,
-                    value=float(equipamento.get("capacidade") or 0.0),
+                    value=float(equipamento.get("capacidade_nominal") or equipamento.get("capacidade") or 0.0),
                     step=0.1,
                     format="%.2f",
                 )
             with col_cap_2:
                 unidade_capac = st.selectbox(
                     "Unidade",
-                    options=unidades_capac,
-                    index=unidades_capac.index(unidade_capac_atual),
+                    options=opcoes_unidades_capac,
+                    index=opcoes_unidades_capac.index(unidade_capac_atual),
+                    format_func=lambda item_id: next((f"{u.get('descricao')} ({u.get('codigo')})" for u in unidades_capac if u.get("id") == item_id), ""),
                 )
             with col_cap_3:
                 unidade_tempo = st.selectbox(
                     "Período",
-                    options=unidades_tempo,
-                    index=unidades_tempo.index(unidade_tempo_atual),
+                    options=opcoes_unidades_tempo,
+                    index=opcoes_unidades_tempo.index(unidade_tempo_atual),
+                    format_func=lambda item_id: next((f"{u.get('descricao')} ({u.get('codigo')})" for u in unidades_tempo if u.get("id") == item_id), ""),
                 )
 
             btn_col1, btn_col2 = st.columns([1, 1])

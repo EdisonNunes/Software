@@ -1,7 +1,39 @@
-﻿import streamlit as st
+import streamlit as st
 
 
 def render_top_menu():
+    if "menu_grupo" not in st.session_state:
+        st.session_state.menu_grupo = None
+
+    if "menu_submenu_visivel" not in st.session_state:
+        st.session_state.menu_submenu_visivel = False
+
+    if "menu_item_selecionado" not in st.session_state:
+        st.session_state.menu_item_selecionado = ""
+
+    def _botao_pagina(coluna, rotulo, key, pagina, submenu=False):
+        with coluna:
+            if st.button(rotulo, width='stretch', key=key):
+                if submenu:
+                    st.session_state.menu_item_selecionado = rotulo
+                    st.session_state.menu_submenu_visivel = False
+                else:
+                    st.session_state.menu_item_selecionado = ""
+                    st.session_state.menu_submenu_visivel = False
+                st.switch_page(pagina)
+
+    def _botao_grupo(coluna, rotulo, key, grupo):
+        with coluna:
+            if st.button(rotulo, width='stretch', key=key):
+                # Ao trocar de grupo, limpa o item anterior para evitar conteúdo residual.
+                st.session_state.menu_item_selecionado = ""
+
+                if st.session_state.menu_grupo == grupo and st.session_state.menu_submenu_visivel:
+                    st.session_state.menu_submenu_visivel = False
+                else:
+                    st.session_state.menu_grupo = grupo
+                    st.session_state.menu_submenu_visivel = True
+                st.switch_page("pages/homepage.py")
 
     # =====================================================
     # MENU PRINCIPAL
@@ -9,165 +41,64 @@ def render_top_menu():
 
     c1, c2, c3, c4 = st.columns(4)
 
-    with c1:
-        if st.button(
-            "🏠 Home",
-            use_container_width=True,
-            key="tm_top_home"
-        ):
-            st.switch_page("pages/homepage.py")
-
-    with c2:
-        if st.button(
-            "📋 Planejamento",
-            use_container_width=True,
-            key="tm_top_planejamento"
-        ):
-            st.session_state.menu_grupo = "planejamento"
-            st.rerun()
-
-    with c3:
-        if st.button(
-            "🏭 Cadastros",
-            use_container_width=True,
-            key="tm_top_cadastros"
-        ):
-            st.session_state.menu_grupo = "cadastros"
-            st.rerun()
-
-    with c4:
-        if st.button(
-            "⚙️ Configurações",
-            use_container_width=True,
-            key="tm_top_config"
-        ):
-            st.session_state.menu_grupo = "configuracoes"
-            st.rerun()
+    _botao_pagina(c1, "\U0001F3E0 Home", "tm_top_home", "pages/homepage.py")
+    _botao_grupo(c2, "\U0001F4CB Planejamento", "tm_top_planejamento", "planejamento")
+    _botao_grupo(c3, "\U0001F3ED Cadastros", "tm_top_cadastros", "cadastros")
+    _botao_grupo(c4, "\U0001F9ED Administração", "tm_top_adm", "administracao")
 
     st.divider()
+
+    if st.session_state.get("menu_item_selecionado"):
+        st.caption(f"Selecionado: {st.session_state.get('menu_item_selecionado')}")
 
     # =====================================================
     # SUBMENU PLANEJAMENTO
     # =====================================================
 
+    if not st.session_state.get("menu_submenu_visivel", False):
+        return
+
     if st.session_state.get("menu_grupo") == "planejamento":
 
         c1, c2, c3, c4 = st.columns(4)
-
-        with c1:
-            if st.button(
-                "📈 Demandas",
-                use_container_width=True,
-                key="tm_sub_demanda"
-            ):
-                st.switch_page("pages/demandas.py")
-
-        with c2:
-            if st.button(
-                "📅 Paradas",
-                use_container_width=True,
-                key="tm_sub_paradas"
-            ):
-                st.switch_page("pages/paradas.py")
+        _botao_pagina(c1, "\U0001F9E0 Planejamento MES", "tm_sub_planejamento_mes", "pages/planejamento.py", submenu=True)
+        _botao_pagina(c2, "\U0001F4C8 Demandas", "tm_sub_demanda", "pages/demandas.py", submenu=True)
+        _botao_pagina(c3, "\U0001F4C5 Paradas", "tm_sub_paradas", "pages/paradas.py", submenu=True)
+        _botao_pagina(c4, "\U0001F3AF Metas", "tm_sub_metas", "pages/metas.py", submenu=True)
 
     # =====================================================
     # SUBMENU CADASTROS
     # =====================================================
 
     elif st.session_state.get("menu_grupo") == "cadastros":
-
+        st.caption("Operacionais")
         c1, c2, c3, c4, c5, c6 = st.columns(6)
+        _botao_pagina(c1, "\U0001F3ED Áreas", "tm_sub_areas", "pages/areas.py", submenu=True)
+        _botao_pagina(c2, "\U0001F3D7\uFE0F Linhas", "tm_sub_linhas", "pages/linhas.py", submenu=True)
+        _botao_pagina(c3, "\u2699\uFE0F Processos", "tm_sub_processos", "pages/processos.py", submenu=True)
+        _botao_pagina(c4, "\U0001F527 Equipamentos", "tm_sub_equipamentos", "pages/equipamentos.py", submenu=True)
+        _botao_pagina(c5, "\u23F1\uFE0F Turnos", "tm_sub_turnos", "pages/turnos.py", submenu=True)
+        _botao_pagina(c6, "\U0001F4E6 SKU", "tm_sub_produtos", "pages/produtos.py", submenu=True)
 
-        with c1:
-            if st.button(
-                "🏭 Áreas",
-                use_container_width=True,
-                key="tm_sub_areas"
-            ):
-                st.switch_page("pages/areas.py")
-
-        with c2:
-            if st.button(
-                "🏗️ Linhas",
-                use_container_width=True,
-                key="tm_sub_linhas"
-            ):
-                st.switch_page("pages/linhas.py")
-
-        with c3:
-            if st.button(
-                "⚙️ Processos",
-                use_container_width=True,
-                key="tm_sub_processos"
-            ):
-                st.switch_page("pages/processos.py")
-
-        with c4:
-            if st.button(
-                "🔧 Equipamentos",
-                use_container_width=True,
-                key="tm_sub_equipamentos"
-            ):
-                st.switch_page("pages/equipamentos.py")
-
-        with c5:
-            if st.button(
-                "⏱️ Turnos",
-                use_container_width=True,
-                key="tm_sub_turnos"
-            ):
-                st.switch_page("pages/turnos.py")
-
-        with c6:
-            if st.button(
-                "📦 SKU",
-                use_container_width=True,
-                key="tm_sub_produtos"
-            ):
-                st.switch_page("pages/produtos.py")
+        st.caption("Auxiliares")
+        c7, c8, c9, c10 = st.columns(4)
+        _botao_pagina(c7, "\U0001F9E9 Famílias", "tm_sub_familias", "pages/familias_produtos.py", submenu=True)
+        _botao_pagina(c8, "\U0001F4D0 Unidades", "tm_sub_unidades", "pages/unidades.py", submenu=True)
+        _botao_pagina(c9, "\U0001FAAA Cargos", "tm_sub_cargos", "pages/cargos.py", submenu=True)
+        _botao_pagina(c10, "\U0001F4C5 Paradas", "tm_sub_paradas_cad", "pages/paradas.py", submenu=True)
 
     # =====================================================
-    # SUBMENU CONFIGURAÇÕES
+    # SUBMENU ADMINISTRAÇÃO
     # =====================================================
 
-    elif st.session_state.get("menu_grupo") == "configuracoes":
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        with c1:
-            if st.button(
-                "📦 SKU",
-                use_container_width=True,
-                key="tm_sub_sku"
-            ):
-                st.switch_page("pages/produtos.py")
-
-        with c2:
-            if st.button(
-                "🎨 Layout",
-                use_container_width=True,
-                key="tm_sub_layout"
-            ):
-                st.switch_page("pages/layout.py")
+    elif st.session_state.get("menu_grupo") in ["administracao", "configuracoes"]:
+        c1, c2, c3 = st.columns(3)
+        _botao_pagina(c1, "\U0001F3A8 Layout", "tm_sub_layout", "pages/layout.py", submenu=True)
 
         # Apenas Admin/Supervisor
         if st.session_state.get("role") in ["admin", "supervisor"]:
-
-            with c3:
-                if st.button(
-                    "🏢 Clientes",
-                    use_container_width=True,
-                    key="tm_sub_clientes"
-                ):
-                    st.switch_page("pages/clientes.py")
-
-            with c4:
-                if st.button(
-                    "👥 Usuários",
-                    use_container_width=True,
-                    key="tm_sub_usuarios"
-                ):
-                    st.switch_page("pages/usuarios.py")
+            _botao_pagina(c2, "\U0001F3E2 Clientes", "tm_sub_clientes", "pages/clientes.py", submenu=True)
+            _botao_pagina(c3, "\U0001F465 Usuários", "tm_sub_usuarios", "pages/usuarios.py", submenu=True)
 
     st.divider()
 

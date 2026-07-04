@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -12,6 +12,7 @@ from pages.crud import (
 	alterar_turno,
 	incluir_turno,
 	listar_clientes,
+	listar_opcoes_turnos,
 	listar_todos_dados_turnos,
 	listar_turnos,
 	desativar_turno,
@@ -314,22 +315,28 @@ elif st.session_state.turno_aba == "Incluir":
 	else:
 		cliente = st.session_state.turno_cliente_selecionado
 		cliente_id = cliente.get("id") or cliente.get("id_cliente")
+		opcoes_turnos = listar_opcoes_turnos(cliente_id)
+		tipos_turno = opcoes_turnos.get("tipos") or ["Regular"]
+		intervalos_turno = opcoes_turnos.get("intervalos") or [0, 15, 30]
 		_render_cliente_banner(cliente, len(listar_turnos(cliente_id)))
 
 		with st.form("form_incluir_turno"):
 			col_esq, col_dir = st.columns(2)
 			with col_esq:
 				descricao = st.text_input("Descrição *", max_chars=120, placeholder="Ex.: 1º Turno").strip()
+				tipo_turno = st.selectbox("Tipo de turno", tipos_turno)
 				inicio = st.time_input("Início *", value=time(8, 0), step=timedelta(minutes=1))
 			with col_dir:
 				final = st.time_input("Final *", value=time(17, 0), step=timedelta(minutes=1))
+				intervalo_minutos = st.selectbox("Intervalo (min)", intervalos_turno, index=intervalos_turno.index(0) if 0 in intervalos_turno else 0)
+				permite_hora_extra = st.checkbox("Permite hora extra", value=False)
 				ativo = st.checkbox("Turno ativo", value=True)
 
 			btn_col1, btn_col2 = st.columns([1, 1])
 			with btn_col1:
-				salvar = st.form_submit_button("Salvar", use_container_width=True)
+				salvar = st.form_submit_button("Salvar", width='stretch')
 			with btn_col2:
-				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+				cancelar = st.form_submit_button("Cancelar", width='stretch')
 
 			if cancelar:
 				st.session_state.turno_aba = "Listar"
@@ -349,7 +356,13 @@ elif st.session_state.turno_aba == "Incluir":
 						inicio.strftime("%H:%M:%S"),
 						final.strftime("%H:%M:%S"),
 						cliente_id,
-						ativo,
+						{
+							"ativo": ativo,
+							"tipo_turno": tipo_turno,
+							"intervalo_minutos": intervalo_minutos,
+							"permite_hora_extra": permite_hora_extra,
+							"vigencia_inicio": date.today().isoformat(),
+						},
 					)
 					st.success("Turno incluído com sucesso!")
 					st.session_state.turno_selecionado = None
@@ -370,25 +383,40 @@ elif st.session_state.turno_aba == "Alterar":
 		turno = st.session_state.turno_selecionado
 		cliente = st.session_state.turno_cliente_selecionado
 		cliente_id = cliente.get("id") or cliente.get("id_cliente")
+		opcoes_turnos = listar_opcoes_turnos(cliente_id)
+		tipos_turno = opcoes_turnos.get("tipos") or ["Regular"]
+		intervalos_turno = opcoes_turnos.get("intervalos") or [0, 15, 30]
 		_render_cliente_banner(cliente, len(listar_turnos(cliente_id)))
 
 		inicio_inicial = _parse_time_value(turno.get("inicio"), time(8, 0))
 		final_inicial = _parse_time_value(turno.get("final"), time(17, 0))
+		tipo_turno_atual = turno.get("tipo_turno") if turno.get("tipo_turno") in tipos_turno else tipos_turno[0]
+		intervalo_atual = turno.get("intervalo_minutos")
+		try:
+			intervalo_atual = int(intervalo_atual)
+		except (TypeError, ValueError):
+			intervalo_atual = 0
+		if intervalo_atual not in intervalos_turno:
+			intervalos_turno = sorted(set(intervalos_turno + [intervalo_atual]))
+		permite_hora_extra_atual = bool(turno.get("permite_hora_extra", False))
 
 		with st.form("form_alterar_turno"):
 			col_esq, col_dir = st.columns(2)
 			with col_esq:
 				descricao = st.text_input("Descrição *", value=turno.get("descricao", ""), max_chars=120)
+				tipo_turno = st.selectbox("Tipo de turno", tipos_turno, index=tipos_turno.index(tipo_turno_atual))
 				inicio = st.time_input("Início *", value=inicio_inicial, step=timedelta(minutes=1))
 			with col_dir:
 				final = st.time_input("Final *", value=final_inicial, step=timedelta(minutes=1))
+				intervalo_minutos = st.selectbox("Intervalo (min)", intervalos_turno, index=intervalos_turno.index(intervalo_atual))
+				permite_hora_extra = st.checkbox("Permite hora extra", value=permite_hora_extra_atual)
 				ativo = st.checkbox("Turno ativo", value=bool(turno.get("ativo", True)))
 
 			btn_col1, btn_col2 = st.columns([1, 1])
 			with btn_col1:
-				salvar = st.form_submit_button("Salvar", use_container_width=True)
+				salvar = st.form_submit_button("Salvar", width='stretch')
 			with btn_col2:
-				cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+				cancelar = st.form_submit_button("Cancelar", width='stretch')
 
 			if cancelar:
 				st.session_state.turno_aba = "Listar"
@@ -408,7 +436,16 @@ elif st.session_state.turno_aba == "Alterar":
 						descricao.strip(),
 						inicio.strftime("%H:%M:%S"),
 						final.strftime("%H:%M:%S"),
-						ativo,
+						{
+							"ativo": ativo,
+							"tipo_turno": tipo_turno,
+							"intervalo_minutos": intervalo_minutos,
+							"permite_hora_extra": permite_hora_extra,
+							"vigencia_inicio": turno.get("vigencia_inicio") or date.today().isoformat(),
+							"vigencia_fim": turno.get("vigencia_fim"),
+							"ordem": turno.get("ordem") or 1,
+							"codigo": turno.get("codigo") or "",
+						},
 					)
 					st.success("Turno alterado com sucesso!")
 					st.session_state.turno_selecionado = None

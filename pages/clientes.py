@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 from supabase import create_client, Client
 import os
 import pandas as pd
@@ -52,7 +52,7 @@ if st.session_state.clientes_aba == "Listar":
         df_exibicao["Selecionar"] = False
         df_exibicao["id"] = df_exibicao["id"].astype(str)
         df_exibicao["situacao"] = df_exibicao["status"].apply(
-            lambda v: "🟢 Ativa" if v else "🔴 Suspensa"
+            lambda v: "\U0001F7E2 Ativa" if v else "\U0001F534 Suspensa"
         )
 
         # Definir colunas para exibição
@@ -100,33 +100,33 @@ if st.session_state.clientes_aba == "Listar":
     # Vamos manter base 0 no backend (session_state.pagina) para minimizar impacto no resto do código, 
     # mas exibir como Base 1.
 
-    if col_pag1.button("⬅️", disabled=st.session_state.clientes_pagina <= 0):
+    if col_pag1.button("\u2B05\uFE0F", key="clientes_pag_anterior", disabled=st.session_state.clientes_pagina <= 0):
         st.session_state.clientes_pagina -= 1
         st.rerun()
 
     col_pag2.write(f"Página {st.session_state.clientes_pagina + 1} de {total_paginas}")
 
-    if col_pag3.button("➡️", disabled=(st.session_state.clientes_pagina + 1) >= total_paginas):
+    if col_pag3.button("\u27A1\uFE0F", key="clientes_pag_proxima", disabled=(st.session_state.clientes_pagina + 1) >= total_paginas):
         st.session_state.clientes_pagina += 1
         st.rerun()
 
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
-        if col1.button("Listar"):
+        if col1.button("Listar", key="clientes_acao_listar"):
             st.session_state.clientes_aba = "Listar"
             st.rerun()
-        if col2.button("Incluir"):
+        if col2.button("Incluir", key="clientes_acao_incluir"):
             st.session_state.clientes_aba = "Incluir"
             st.rerun()
-        if col3.button("Alterar", disabled=st.session_state.clientes_selecionado is None):
+        if col3.button("Alterar", key="clientes_acao_alterar", disabled=st.session_state.clientes_selecionado is None):
             st.session_state.clientes_aba = "Alterar"
             st.rerun()
 
         cliente_sel = st.session_state.clientes_selecionado
         if cliente_sel is None:
-            col4.button("🔒 Suspender", disabled=True)
+            col4.button("\U0001F512 Suspender", key="clientes_suspender_disabled", disabled=True)
         elif cliente_sel.get("status", True):
-            if col4.button("🔒 Suspender"):
+            if col4.button("\U0001F512 Suspender", key="clientes_suspender"):
                 try:
                     desativar_cliente(cliente_sel.get("id"))
                     st.session_state.clientes_selecionado = None
@@ -135,7 +135,7 @@ if st.session_state.clientes_aba == "Listar":
                 except Exception as e:
                     st.error(f"Erro ao suspender cliente: {e}")
         else:
-            if col4.button("🔓 Reativar"):
+            if col4.button("\U0001F513 Reativar", key="clientes_reativar"):
                 try:
                     reativar_cliente(cliente_sel.get("id"))
                     st.session_state.clientes_selecionado = None
@@ -198,9 +198,9 @@ elif st.session_state.clientes_aba == "Incluir":
 
         btn_col1, btn_col2 = st.columns([1, 1])
         with btn_col1:
-            salvar = st.form_submit_button("Salvar", use_container_width=True)
+            salvar = st.form_submit_button("Salvar", width='stretch', key="clientes_incluir_salvar")
         with btn_col2:
-            sair_sem_salvar = st.form_submit_button("Sair sem Salvar", use_container_width=True)
+            sair_sem_salvar = st.form_submit_button("Sair sem Salvar", width='stretch', key="clientes_incluir_cancelar")
 
         if sair_sem_salvar:
             st.session_state.clientes_aba = "Listar"
@@ -222,7 +222,7 @@ elif st.session_state.clientes_aba == "Alterar":
 
     if cliente is None:
         st.warning("Selecione um cliente na lista antes de alterar.")
-        if st.button("Voltar para lista"):
+        if st.button("Voltar para lista", key="clientes_alterar_sem_selecao_voltar"):
             st.session_state.clientes_aba = "Listar"
             st.rerun()
     else:
@@ -323,9 +323,9 @@ elif st.session_state.clientes_aba == "Alterar":
 
             btn_col1, btn_col2 = st.columns([1, 1])
             with btn_col1:
-                salvar = st.form_submit_button("Salvar", use_container_width=True)
+                salvar = st.form_submit_button("Salvar", width='stretch', key="clientes_alterar_salvar")
             with btn_col2:
-                cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+                cancelar = st.form_submit_button("Cancelar", width='stretch', key="clientes_alterar_cancelar")
 
             if cancelar:
                 st.session_state.clientes_selecionado = None

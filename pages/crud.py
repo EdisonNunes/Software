@@ -8,10 +8,12 @@ DEPRECATED: Use services/clientes.py e services/servicos.py
 """
 
 import logging
+import re
 from urllib import response
 import warnings
 import streamlit as st
 from typing import List, Dict, Any, Optional
+from datetime import date
 from supabase import create_client
 from config.settings import settings
 from services import ClienteService, ServicoService
@@ -246,6 +248,737 @@ def get_supabase_admin():
         config["url"],
         config["service_role_key"]  # SUPABASE_SERVICE_ROLE_KEY
     )
+
+
+def _normalizar_texto(valor: Any) -> str:
+    return str(valor or "").strip().lower()
+
+
+def _codigo_sanitizado(texto: str) -> str:
+    base = re.sub(r"[^A-Za-z0-9]+", "_", texto or "").strip("_").upper()
+    return base[:30] or "FAM"
+
+
+def _carregar_unidades() -> List[Dict[str, Any]]:
+    response = (
+        supabase
+        .table("unidades")
+        .select("id, codigo, descricao, categoria, ativo")
+        .order("categoria", desc=False)
+        .order("descricao", desc=False)
+        .execute()
+    )
+    return response.data or []
+
+
+def _resolver_unidade_id(
+    unidades: List[Dict[str, Any]],
+    valor_entrada: Any,
+    codigos_preferidos: Optional[List[str]] = None,
+    categoria_preferida: Optional[str] = None,
+) -> Optional[str]:
+    if not unidades:
+        return None
+
+    if isinstance(valor_entrada, str) and "-" in valor_entrada and len(valor_entrada) >= 32:
+        return valor_entrada
+
+    texto = _normalizar_texto(valor_entrada)
+    if texto:
+        for item in unidades:
+            if _normalizar_texto(item.get("id")) == texto:
+                return item.get("id")
+            if _normalizar_texto(item.get("codigo")) == texto:
+                return item.get("id")
+            if _normalizar_texto(item.get("descricao")) == texto:
+                return item.get("id")
+
+        aliases = {
+            "litros": "l",
+            "unidades": "un",
+            "horas": "h",
+            "mes": "m",
+        }
+        codigo_alias = aliases.get(texto)
+        if codigo_alias:
+            for item in unidades:
+                if _normalizar_texto(item.get("codigo")) == codigo_alias:
+                    return item.get("id")
+
+    if codigos_preferidos:
+        for codigo in codigos_preferidos:
+            for item in unidades:
+                if _normalizar_texto(item.get("codigo")) == _normalizar_texto(codigo):
+                    return item.get("id")
+
+    if categoria_preferida:
+        for item in unidades:
+            if _normalizar_texto(item.get("categoria")) == _normalizar_texto(categoria_preferida):
+                return item.get("id")
+
+    return unidades[0].get("id")
+
+
+def _resolver_familia_id(cliente_id: str, familia_id: Any, familia_texto: Any) -> Optional[str]:
+    if familia_id:
+        return familia_id
+
+    if not cliente_id:
+        return None
+
+    familias = (
+        supabase
+        .table("familias_produtos")
+        .select("id, codigo, descricao, cliente_id")
+        .eq("cliente_id", cliente_id)
+        .order("descricao", desc=False)
+        .execute()
+    ).data or []
+
+    texto = (familia_texto or "").strip()
+    if texto:
+        texto_norm = _normalizar_texto(texto)
+        for item in familias:
+            if _normalizar_texto(item.get("descricao")) == texto_norm or _normalizar_texto(item.get("codigo")) == texto_norm:
+                return item.get("id")
+
+        novo_codigo = _codigo_sanitizado(texto)
+        existente_codigo = {_normalizar_texto(item.get("codigo")) for item in familias}
+        if _normalizar_texto(novo_codigo) in existente_codigo:
+            novo_codigo = f"{novo_codigo}_{len(familias) + 1}"
+
+        criada = (
+            supabase
+            .table("familias_produtos")
+            .insert(
+                {
+                    "cliente_id": cliente_id,
+                    "codigo": novo_codigo,
+                    "descricao": texto,
+                    "ativo": True,
+                }
+            )
+            .execute()
+        )
+        if criada.data:
+            return criada.data[0].get("id")
+
+    return familias[0].get("id") if familias else None
+
+
+def _resolver_equipamento_id(cliente_id: str, equipamento_id: Any, equipamento_texto: Any) -> Optional[str]:
+    if equipamento_id:
+        return equipamento_id
+
+    if not cliente_id:
+        return None
+
+    equipamentos = (
+        supabase
+        .table("equipamentos")
+        .select("id, descricao, codigo, cliente_id")
+        .eq("cliente_id", cliente_id)
+        .order("descricao", desc=False)
+        .execute()
+    ).data or []
+
+    texto = _normalizar_texto(equipamento_texto)
+    if texto:
+        for item in equipamentos:
+            if _normalizar_texto(item.get("descricao")) == texto or _normalizar_texto(item.get("codigo")) == texto:
+                return item.get("id")
+
+    return equipamentos[0].get("id") if equipamentos else None
+
+
+def _enriquecer_produtos_legacy(produtos: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not produtos:
+        return []
+
+    familias = (
+        supabase.table("familias_produtos").select("id, descricao, codigo").execute().data
+        or []
+    )
+    equipamentos = (
+        supabase.table("equipamentos").select("id, descricao, codigo").execute().data
+        or []
+    )
+    unidades = _carregar_unidades()
+
+    familias_por_id = {item.get("id"): item for item in familias}
+    equipamentos_por_id = {item.get("id"): item for item in equipamentos}
+    unidades_por_id = {item.get("id"): item for item in unidades}
+
+    saida = []
+    for item in produtos:
+        registro = dict(item)
+        familia = familias_por_id.get(registro.get("familia_id"), {})
+        equipamento = equipamentos_por_id.get(registro.get("equipamento_id"), {})
+        unidade_lote = unidades_por_id.get(registro.get("unidade_lote_id"), {})
+        unidade_tempo = unidades_por_id.get(registro.get("unidade_tempo_id"), {})
+
+        registro["familia"] = familia.get("descricao", "")
+        registro["equipamento"] = equipamento.get("descricao", "")
+        registro["tempo_ciclo"] = registro.get("tempo_ciclo_padrao")
+        registro["unidade_lote"] = unidade_lote.get("codigo") or unidade_lote.get("descricao")
+        registro["unidade_tempo"] = unidade_tempo.get("codigo") or unidade_tempo.get("descricao")
+        # Campos legados descontinuados no banco, mantidos para nao quebrar telas.
+        registro.setdefault("area_produtiva", "")
+        registro.setdefault("area_embalagem", "")
+        registro.setdefault("area_rota", "")
+        saida.append(registro)
+
+    return saida
+
+
+def _mapear_unidade_para_ui(codigo: str, categoria: str) -> str:
+    codigo_norm = _normalizar_texto(codigo)
+    categoria_norm = _normalizar_texto(categoria)
+    if codigo_norm == "l":
+        return "litros"
+    if codigo_norm in {"un", "pc"}:
+        return "unidades"
+    if codigo_norm == "h":
+        return "horas"
+    if codigo_norm == "m" and categoria_norm == "tempo":
+        return "mes"
+    return codigo or ""
+
+
+def _enriquecer_equipamentos_legacy(equipamentos: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not equipamentos:
+        return []
+
+    unidades = _carregar_unidades()
+    unidades_por_id = {item.get("id"): item for item in unidades}
+    saida = []
+
+    for item in equipamentos:
+        registro = dict(item)
+        unidade_capacidade = unidades_por_id.get(registro.get("unidade_capacidade_id"), {})
+        unidade_tempo = unidades_por_id.get(registro.get("unidade_tempo_id"), {})
+        registro["capacidade"] = registro.get("capacidade_nominal")
+        registro["unidade_capac"] = _mapear_unidade_para_ui(
+            unidade_capacidade.get("codigo", ""),
+            unidade_capacidade.get("categoria", ""),
+        )
+        registro["unidade_tempo"] = _mapear_unidade_para_ui(
+            unidade_tempo.get("codigo", ""),
+            unidade_tempo.get("categoria", ""),
+        )
+        saida.append(registro)
+
+    return saida
+
+
+def listar_todos_dados_familias_produtos(cliente_id=""):
+    query = (
+        supabase
+        .table("familias_produtos")
+        .select("id, codigo, descricao, cliente_id, ativo")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    query = query.eq("ativo", True).order("descricao", desc=False)
+    response = query.execute()
+    return response.data or []
+
+
+def listar_unidades(categoria=""):
+    query = (
+        supabase
+        .table("unidades")
+        .select("id, codigo, descricao, categoria, ativo")
+        .eq("ativo", True)
+    )
+
+    if categoria:
+        if isinstance(categoria, (list, tuple, set)):
+            categorias = [str(item).strip() for item in categoria if str(item).strip()]
+            if categorias:
+                query = query.in_("categoria", categorias)
+        else:
+            query = query.eq("categoria", str(categoria).strip())
+
+    query = query.order("categoria", desc=False).order("descricao", desc=False)
+    response = query.execute()
+    return response.data or []
+
+
+def listar_familias_produtos(cliente_id="", ativo=None):
+    def _filtrar(data):
+        filtrado = data or []
+
+        if cliente_id:
+            cliente_norm = str(cliente_id)
+            por_cliente = []
+            for item in filtrado:
+                # Schema confirmado: familias_produtos usa cliente_id.
+                cli_item = item.get("cliente_id")
+                if cli_item is None or str(cli_item) == cliente_norm:
+                    por_cliente.append(item)
+            filtrado = por_cliente
+
+        if ativo is not None:
+            filtrado = [item for item in filtrado if bool(item.get("ativo")) == bool(ativo)]
+
+        return filtrado
+
+    # Busca ampla e aplica filtros em memoria para suportar dados legados.
+    query = (
+        supabase
+        .table("familias_produtos")
+        .select("*")
+        .order("descricao", desc=False)
+    )
+    response = query.execute()
+    data = _filtrar(response.data or [])
+
+    # Fallback: em alguns ambientes a politica de acesso da tabela pode
+    # retornar vazio para o cliente autenticado mesmo havendo dados.
+    if not data:
+        try:
+            admin = get_supabase_admin()
+            response_admin = (
+                admin
+                .table("familias_produtos")
+                .select("*")
+                .order("descricao", desc=False)
+                .execute()
+            )
+            data_admin = _filtrar(response_admin.data or [])
+            if data_admin:
+                return data_admin
+        except Exception:
+            pass
+
+    return data
+
+
+def incluir_familia_produto(codigo, descricao, cliente_id, ativo=True):
+    descricao = (descricao or "").strip()
+    if not descricao:
+        raise ValueError("Descrição da família é obrigatória.")
+
+    codigo_final = (codigo or "").strip().upper()
+    if not codigo_final:
+        codigo_final = _codigo_sanitizado(descricao)
+
+    existe = (
+        supabase
+        .table("familias_produtos")
+        .select("id")
+        .eq("cliente_id", cliente_id)
+        .eq("codigo", codigo_final)
+        .limit(1)
+        .execute()
+    )
+    if existe.data:
+        raise ValueError("Já existe uma família com esse código para o cliente.")
+
+    response = (
+        supabase
+        .table("familias_produtos")
+        .insert(
+            {
+                "codigo": codigo_final,
+                "descricao": descricao,
+                "cliente_id": cliente_id,
+                "ativo": bool(ativo),
+            }
+        )
+        .execute()
+    )
+    return response.data
+
+
+def alterar_familia_produto(familia_id, codigo, descricao, ativo=None):
+    descricao = (descricao or "").strip()
+    if not descricao:
+        raise ValueError("Descrição da família é obrigatória.")
+
+    codigo_final = (codigo or "").strip().upper()
+    if not codigo_final:
+        codigo_final = _codigo_sanitizado(descricao)
+
+    atual = (
+        supabase
+        .table("familias_produtos")
+        .select("cliente_id")
+        .eq("id", familia_id)
+        .limit(1)
+        .execute()
+    )
+    cliente_id = atual.data[0].get("cliente_id") if atual.data else None
+
+    if cliente_id:
+        duplicado = (
+            supabase
+            .table("familias_produtos")
+            .select("id")
+            .eq("cliente_id", cliente_id)
+            .eq("codigo", codigo_final)
+            .neq("id", familia_id)
+            .limit(1)
+            .execute()
+        )
+        if duplicado.data:
+            raise ValueError("Já existe uma família com esse código para o cliente.")
+
+    payload = {
+        "codigo": codigo_final,
+        "descricao": descricao,
+    }
+    if ativo is not None:
+        payload["ativo"] = bool(ativo)
+
+    response = (
+        supabase
+        .table("familias_produtos")
+        .update(payload)
+        .eq("id", familia_id)
+        .execute()
+    )
+    return response.data
+
+
+def desativar_familia_produto(familia_id):
+    response = (
+        supabase
+        .table("familias_produtos")
+        .update({"ativo": False})
+        .eq("id", familia_id)
+        .execute()
+    )
+    return response.data
+
+
+def reativar_familia_produto(familia_id):
+    response = (
+        supabase
+        .table("familias_produtos")
+        .update({"ativo": True})
+        .eq("id", familia_id)
+        .execute()
+    )
+    return response.data
+
+
+def listar_todos_dados_unidades(categoria="", ativo=None):
+    query = (
+        supabase
+        .table("unidades")
+        .select("id, codigo, descricao, categoria, ativo")
+    )
+
+    if categoria:
+        if isinstance(categoria, (list, tuple, set)):
+            categorias = [str(item).strip() for item in categoria if str(item).strip()]
+            if categorias:
+                query = query.in_("categoria", categorias)
+        else:
+            query = query.eq("categoria", str(categoria).strip())
+
+    if ativo is not None:
+        query = query.eq("ativo", bool(ativo))
+
+    query = query.order("categoria", desc=False).order("descricao", desc=False)
+    response = query.execute()
+    return response.data or []
+
+
+def incluir_unidade(codigo, descricao, categoria, ativo=True):
+    descricao = (descricao or "").strip()
+    categoria_final = (categoria or "").strip()
+    if not descricao:
+        raise ValueError("Descrição da unidade é obrigatória.")
+    if not categoria_final:
+        raise ValueError("Categoria da unidade é obrigatória.")
+
+    codigo_final = (codigo or "").strip().upper()
+    if not codigo_final:
+        codigo_final = re.sub(r"[^A-Za-z0-9]+", "_", descricao).strip("_").upper()[:30] or "UND"
+
+    existe = (
+        supabase
+        .table("unidades")
+        .select("id")
+        .eq("categoria", categoria_final)
+        .eq("codigo", codigo_final)
+        .limit(1)
+        .execute()
+    )
+    if existe.data:
+        raise ValueError("Já existe uma unidade com esse código na categoria informada.")
+
+    response = (
+        supabase
+        .table("unidades")
+        .insert(
+            {
+                "codigo": codigo_final,
+                "descricao": descricao,
+                "categoria": categoria_final,
+                "ativo": bool(ativo),
+            }
+        )
+        .execute()
+    )
+    return response.data
+
+
+def alterar_unidade(unidade_id, codigo, descricao, categoria, ativo=None):
+    descricao = (descricao or "").strip()
+    categoria_final = (categoria or "").strip()
+    if not descricao:
+        raise ValueError("Descrição da unidade é obrigatória.")
+    if not categoria_final:
+        raise ValueError("Categoria da unidade é obrigatória.")
+
+    codigo_final = (codigo or "").strip().upper()
+    if not codigo_final:
+        codigo_final = re.sub(r"[^A-Za-z0-9]+", "_", descricao).strip("_").upper()[:30] or "UND"
+
+    duplicado = (
+        supabase
+        .table("unidades")
+        .select("id")
+        .eq("categoria", categoria_final)
+        .eq("codigo", codigo_final)
+        .neq("id", unidade_id)
+        .limit(1)
+        .execute()
+    )
+    if duplicado.data:
+        raise ValueError("Já existe uma unidade com esse código na categoria informada.")
+
+    payload = {
+        "codigo": codigo_final,
+        "descricao": descricao,
+        "categoria": categoria_final,
+    }
+    if ativo is not None:
+        payload["ativo"] = bool(ativo)
+
+    response = (
+        supabase
+        .table("unidades")
+        .update(payload)
+        .eq("id", unidade_id)
+        .execute()
+    )
+    return response.data
+
+
+def desativar_unidade(unidade_id):
+    response = (
+        supabase
+        .table("unidades")
+        .update({"ativo": False})
+        .eq("id", unidade_id)
+        .execute()
+    )
+    return response.data
+
+
+def reativar_unidade(unidade_id):
+    response = (
+        supabase
+        .table("unidades")
+        .update({"ativo": True})
+        .eq("id", unidade_id)
+        .execute()
+    )
+    return response.data
+
+
+def listar_opcoes_paradas(cliente_id=""):
+    query = (
+        supabase
+        .table("paradas")
+        .select("tipo, categoria_oee")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    response = query.execute()
+    data = response.data or []
+
+    tipos_base = ["Planejada", "Não Planejada"]
+    categorias_base = ["Disponibilidade", "Performance", "Qualidade"]
+
+    tipos = []
+    categorias = []
+
+    for item in data:
+        tipo = (item.get("tipo") or "").strip()
+        categoria = (item.get("categoria_oee") or "").strip()
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+        if categoria and categoria not in categorias:
+            categorias.append(categoria)
+
+    for item in tipos_base:
+        if item not in tipos:
+            tipos.append(item)
+
+    for item in categorias_base:
+        if item not in categorias:
+            categorias.append(item)
+
+    return {
+        "tipos": tipos,
+        "categorias_oee": categorias,
+    }
+
+
+def listar_opcoes_classificacao_equipamento(cliente_id=""):
+    query = (
+        supabase
+        .table("equipamentos")
+        .select("classif")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    response = query.execute()
+    data = response.data or []
+
+    opcoes = []
+    for item in data:
+        valor = (item.get("classif") or "").strip()
+        if valor and valor not in opcoes:
+            opcoes.append(valor)
+
+    for padrao in ["Principal", "Secundário"]:
+        if padrao not in opcoes:
+            opcoes.append(padrao)
+
+    return opcoes
+
+
+def listar_cargos(ativo=True):
+    query = (
+        supabase
+        .table("cargos")
+        .select("id, descricao, ativo")
+        .order("descricao", desc=False)
+    )
+
+    if ativo is not None:
+        query = query.eq("ativo", bool(ativo))
+
+    response = query.execute()
+    return response.data or []
+
+
+def incluir_cargo(descricao, ativo=True):
+    descricao_final = (descricao or "").strip()
+    if not descricao_final:
+        raise ValueError("Descrição do cargo é obrigatória.")
+
+    existe = (
+        supabase
+        .table("cargos")
+        .select("id")
+        .eq("descricao", descricao_final)
+        .limit(1)
+        .execute()
+    )
+    if existe.data:
+        raise ValueError("Já existe um cargo com essa descrição.")
+
+    response = (
+        supabase
+        .table("cargos")
+        .insert(
+            {
+                "descricao": descricao_final,
+                "ativo": bool(ativo),
+            }
+        )
+        .execute()
+    )
+    return response.data
+
+
+def alterar_cargo(cargo_id, descricao, ativo=None):
+    descricao_final = (descricao or "").strip()
+    if not descricao_final:
+        raise ValueError("Descrição do cargo é obrigatória.")
+
+    duplicado = (
+        supabase
+        .table("cargos")
+        .select("id")
+        .eq("descricao", descricao_final)
+        .neq("id", cargo_id)
+        .limit(1)
+        .execute()
+    )
+    if duplicado.data:
+        raise ValueError("Já existe um cargo com essa descrição.")
+
+    payload = {"descricao": descricao_final}
+    if ativo is not None:
+        payload["ativo"] = bool(ativo)
+
+    response = (
+        supabase
+        .table("cargos")
+        .update(payload)
+        .eq("id", cargo_id)
+        .execute()
+    )
+    return response.data
+
+
+def desativar_cargo(cargo_id):
+    response = (
+        supabase
+        .table("cargos")
+        .update({"ativo": False})
+        .eq("id", cargo_id)
+        .execute()
+    )
+    return response.data
+
+
+def reativar_cargo(cargo_id):
+    response = (
+        supabase
+        .table("cargos")
+        .update({"ativo": True})
+        .eq("id", cargo_id)
+        .execute()
+    )
+    return response.data
+
+
+def listar_opcoes_roles_usuarios():
+    response = (
+        supabase
+        .table("perfis")
+        .select("role")
+        .execute()
+    )
+
+    roles = []
+    for item in response.data or []:
+        role = (item.get("role") or "").strip().lower()
+        if role and role not in roles:
+            roles.append(role)
+
+    # O fluxo de cadastro nesta tela deve continuar restrito a gerente/funcionario.
+    for role in ["gerente", "funcionario"]:
+        if role not in roles:
+            roles.append(role)
+
+    return roles
 # ####################################################
 # CLIENTES  - TABELA CLIENTES
 # create table public.clientes (
@@ -325,7 +1058,26 @@ def reativar_cliente(id):
 # ) TABLESPACE pg_default;
 # ####################################################    
 def listar_produtos(filtro_produto=""):
-    query = supabase.table("produtos").select("id, codigo, descricao, familia, area_produtiva, area_embalagem, lote_padrao, area_rota, equipamento, tempo_ciclo")
+    query = (
+        supabase
+        .table("produtos")
+        .select(
+            """
+            id,
+            codigo,
+            descricao,
+            cliente_id,
+            familia_id,
+            equipamento_id,
+            lote_padrao,
+            tempo_ciclo_padrao,
+            unidade_lote_id,
+            unidade_tempo_id,
+            ean,
+            ativo
+            """
+        )
+    )
     
     # Apenas Admin/Supervisor terão acesso a outras empresas,
     # pois a própria RLS permitirá.
@@ -334,12 +1086,17 @@ def listar_produtos(filtro_produto=""):
         query = query.filter("cliente_id", "eq", filtro_produto)
     query = query.order("descricao", desc=False)
     response = query.execute()
-    return response.data
+    return _enriquecer_produtos_legacy(response.data or [])
 
 def listar_todos_dados_produtos():
-    query = supabase.table("produtos").select("*").order("descricao", desc=False)
+    query = (
+        supabase
+        .table("produtos")
+        .select("*")
+        .order("descricao", desc=False)
+    )
     response = query.execute()
-    return response.data
+    return _enriquecer_produtos_legacy(response.data or [])
 
 def incluir_produto(dados):
     existe = supabase.table("produtos").select("*") \
@@ -347,10 +1104,101 @@ def incluir_produto(dados):
     #   .eq("empresa", dados["empresa"]).eq("cidade", dados["cidade"]).execute()
     if existe.data:
         raise ValueError("Já existe um produto com essa descricao.")
-    supabase.table("produtos").insert(dados).execute()
+
+    cliente_id = dados.get("cliente_id")
+    if not cliente_id:
+        raise ValueError("Cliente obrigatório para incluir produto.")
+
+    unidades = _carregar_unidades()
+    familia_id = _resolver_familia_id(cliente_id, dados.get("familia_id"), dados.get("familia"))
+    equipamento_id = _resolver_equipamento_id(cliente_id, dados.get("equipamento_id"), dados.get("equipamento"))
+    if not familia_id:
+        raise ValueError("Não foi possível identificar uma família para o produto.")
+    if not equipamento_id:
+        raise ValueError("Não foi possível identificar um equipamento para o produto.")
+    unidade_lote_id = _resolver_unidade_id(
+        unidades,
+        dados.get("unidade_lote_id") or dados.get("unidade_lote"),
+        codigos_preferidos=["lote", "un", "pc"],
+        categoria_preferida="Produção",
+    )
+    unidade_tempo_id = _resolver_unidade_id(
+        unidades,
+        dados.get("unidade_tempo_id") or dados.get("unidade_tempo"),
+        codigos_preferidos=["min", "h", "s"],
+        categoria_preferida="Tempo",
+    )
+
+    payload = {
+        "codigo": dados.get("codigo"),
+        "descricao": dados.get("descricao"),
+        "cliente_id": cliente_id,
+        "familia_id": familia_id,
+        "equipamento_id": equipamento_id,
+        "lote_padrao": dados.get("lote_padrao"),
+        "tempo_ciclo_padrao": dados.get("tempo_ciclo_padrao", dados.get("tempo_ciclo")),
+        "unidade_lote_id": unidade_lote_id,
+        "unidade_tempo_id": unidade_tempo_id,
+        "ean": dados.get("ean"),
+        "ativo": bool(dados.get("ativo", True)),
+    }
+
+    supabase.table("produtos").insert(payload).execute()
 
 def alterar_produto(id, dados):
-    supabase.table("produtos").update(dados).eq("id", id).execute()
+    unidades = _carregar_unidades()
+
+    existing = (
+        supabase
+        .table("produtos")
+        .select("cliente_id")
+        .eq("id", id)
+        .limit(1)
+        .execute()
+    )
+    cliente_id = (
+        dados.get("cliente_id")
+        or (existing.data[0].get("cliente_id") if existing.data else None)
+    )
+
+    payload = {
+        "codigo": dados.get("codigo"),
+        "descricao": dados.get("descricao"),
+        "lote_padrao": dados.get("lote_padrao"),
+        "tempo_ciclo_padrao": dados.get("tempo_ciclo_padrao", dados.get("tempo_ciclo")),
+        "ean": dados.get("ean"),
+    }
+
+    if cliente_id:
+        payload["cliente_id"] = cliente_id
+        payload["familia_id"] = _resolver_familia_id(cliente_id, dados.get("familia_id"), dados.get("familia"))
+        payload["equipamento_id"] = _resolver_equipamento_id(cliente_id, dados.get("equipamento_id"), dados.get("equipamento"))
+        if not payload["familia_id"]:
+            raise ValueError("Não foi possível identificar uma família para o produto.")
+        if not payload["equipamento_id"]:
+            raise ValueError("Não foi possível identificar um equipamento para o produto.")
+
+    unidade_lote_id = _resolver_unidade_id(
+        unidades,
+        dados.get("unidade_lote_id") or dados.get("unidade_lote"),
+        codigos_preferidos=["lote", "un", "pc"],
+        categoria_preferida="Produção",
+    )
+    unidade_tempo_id = _resolver_unidade_id(
+        unidades,
+        dados.get("unidade_tempo_id") or dados.get("unidade_tempo"),
+        codigos_preferidos=["min", "h", "s"],
+        categoria_preferida="Tempo",
+    )
+
+    if unidade_lote_id:
+        payload["unidade_lote_id"] = unidade_lote_id
+    if unidade_tempo_id:
+        payload["unidade_tempo_id"] = unidade_tempo_id
+    if "ativo" in dados:
+        payload["ativo"] = bool(dados.get("ativo"))
+
+    supabase.table("produtos").update(payload).eq("id", id).execute()
 
 def excluir_produto(id):
     supabase.table("produtos").delete().eq("id", id).execute()
@@ -382,13 +1230,17 @@ def listar_usuarios(cliente_id):
 
         admin = get_supabase_admin()
 
+        cargos = listar_cargos(ativo=None)
+        cargos_por_id = {item.get("id"): item.get("descricao", "") for item in cargos}
+
         response = (
             admin
             .table("perfis")
             .select("""
                 id,
                 role,
-                cliente_id
+                cliente_id,
+                cargo_id
             """)
             .eq("cliente_id", cliente_id)
             .order("role")
@@ -408,6 +1260,9 @@ def listar_usuarios(cliente_id):
                 usuarios.append({
                     "id": perfil["id"],
                     "cliente_id": perfil["cliente_id"],
+                    "cargo_id": perfil.get("cargo_id"),
+                    "cargo": cargos_por_id.get(perfil.get("cargo_id"), ""),
+                    "role": perfil.get("role"),
                     "nome": (
                         user.user.user_metadata.get(
                             "display_name",
@@ -442,7 +1297,8 @@ def incluir_usuario(
     email,
     senha,
     tipo,
-    cliente_id
+    cliente_id,
+    cargo_id=None
 ):
 
     admin = get_supabase_admin()
@@ -474,7 +1330,8 @@ def incluir_usuario(
         .update(
             {
                 "role": tipo,
-                "cliente_id": cliente_id
+                "cliente_id": cliente_id,
+                "cargo_id": cargo_id,
             }
         )
         .eq("id", user_id)
@@ -493,7 +1350,8 @@ def incluir_usuario(
 def alterar_usuario(
     user_id,
     nome,
-    tipo
+    tipo,
+    cargo_id=None
 ):
 
     admin = get_supabase_admin()
@@ -520,7 +1378,8 @@ def alterar_usuario(
         .table("perfis")
         .update(
             {
-                "role": tipo
+                "role": tipo,
+                "cargo_id": cargo_id,
             }
         )
         .eq("id", user_id)
@@ -709,7 +1568,7 @@ def listar_equipamentos(cliente_id=""):
 
     response = query.execute()
 
-    return response.data
+    return _enriquecer_equipamentos_legacy(response.data or [])
 
 def listar_todos_dados_equipamentos(cliente_id=""):
     query = (
@@ -725,7 +1584,7 @@ def listar_todos_dados_equipamentos(cliente_id=""):
 
     response = query.execute()
 
-    return response.data
+    return _enriquecer_equipamentos_legacy(response.data or [])
 
 def incluir_equipamento(*args, **kwargs):
     # Compatibilidade com assinatura antiga e nova.
@@ -751,6 +1610,20 @@ def incluir_equipamento(*args, **kwargs):
         unidade_tempo = args[7] if len(args) > 7 else None
         cliente_id = args[8] if len(args) > 8 else None
 
+    unidades = _carregar_unidades()
+    unidade_capacidade_id = _resolver_unidade_id(
+        unidades,
+        unidade_capac,
+        codigos_preferidos=["kg", "l", "un", "pc"],
+        categoria_preferida="Massa",
+    )
+    unidade_tempo_id = _resolver_unidade_id(
+        unidades,
+        unidade_tempo,
+        codigos_preferidos=["min", "h", "dia"],
+        categoria_preferida="Tempo",
+    )
+
     response = (
         supabase
         .table("equipamentos")
@@ -761,9 +1634,9 @@ def incluir_equipamento(*args, **kwargs):
                 "classif": classif,
                 "linha": linha,
                 "processo": processo,
-                "capacidade": capacidade,
-                "unidade_capac": unidade_capac,
-                "unidade_tempo": unidade_tempo,
+                "capacidade_nominal": capacidade,
+                "unidade_capacidade_id": unidade_capacidade_id,
+                "unidade_tempo_id": unidade_tempo_id,
                 "cliente_id": cliente_id
             }
         )
@@ -800,6 +1673,8 @@ def alterar_equipamento(
         unidade_capac = args[7] if len(args) > 7 else None
         unidade_tempo = args[8] if len(args) > 8 else None
 
+    unidades = _carregar_unidades()
+
     payload = {
         "codigo": codigo,
         "descricao": descricao,
@@ -811,11 +1686,21 @@ def alterar_equipamento(
     if processo is not None:
         payload["processo"] = processo
     if capacidade is not None:
-        payload["capacidade"] = capacidade
+        payload["capacidade_nominal"] = capacidade
     if unidade_capac is not None:
-        payload["unidade_capac"] = unidade_capac
+        payload["unidade_capacidade_id"] = _resolver_unidade_id(
+            unidades,
+            unidade_capac,
+            codigos_preferidos=["kg", "l", "un", "pc"],
+            categoria_preferida="Massa",
+        )
     if unidade_tempo is not None:
-        payload["unidade_tempo"] = unidade_tempo
+        payload["unidade_tempo_id"] = _resolver_unidade_id(
+            unidades,
+            unidade_tempo,
+            codigos_preferidos=["min", "h", "dia"],
+            categoria_preferida="Tempo",
+        )
 
     response = (
         supabase
@@ -1319,6 +2204,7 @@ def listar_paradas(cliente_id=""):
             id,
             codigo,
             descricao,
+            tipo,
             categoria_oee,
             cliente_id,
             ativo
@@ -1332,7 +2218,7 @@ def listar_paradas(cliente_id=""):
     query = query.order("descricao", desc=False)
 
     response = query.execute()
-
+    # print("listar_paradas response:", response.data)  # Debugging line
     return response.data
 
 def listar_todos_dados_paradas(cliente_id=""):
@@ -1354,6 +2240,7 @@ def listar_todos_dados_paradas(cliente_id=""):
 def incluir_parada(
     codigo,
     descricao,
+    tipo,
     categoria_oee,
     cliente_id
 ):
@@ -1364,6 +2251,7 @@ def incluir_parada(
             {
                 "codigo": codigo,
                 "descricao": descricao,
+                "tipo": tipo,
                 "categoria_oee": categoria_oee,
                 "cliente_id": cliente_id
             }
@@ -1378,6 +2266,7 @@ def alterar_parada(
     parada_id,
     codigo,
     descricao,
+    tipo,
     categoria_oee,
 ):
     response = (
@@ -1387,6 +2276,7 @@ def alterar_parada(
             {
                 "codigo": codigo,
                 "descricao": descricao,
+                "tipo": tipo,
                 "categoria_oee": categoria_oee
             }
         )
@@ -1454,6 +2344,52 @@ def _turno_ja_existe(cliente_id, descricao, turno_id=None):
     return bool(response.data)
 
 
+def listar_opcoes_turnos(cliente_id=""):
+    query = (
+        supabase
+        .table("turnos")
+        .select("tipo_turno, intervalo_minutos")
+    )
+
+    if cliente_id:
+        query = query.eq("cliente_id", cliente_id)
+
+    response = query.execute()
+    data = response.data or []
+
+    tipos = []
+    intervalos = []
+
+    for item in data:
+        tipo = (item.get("tipo_turno") or "").strip()
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+
+        intervalo = item.get("intervalo_minutos")
+        if intervalo is not None:
+            try:
+                val = int(intervalo)
+                if val not in intervalos:
+                    intervalos.append(val)
+            except (TypeError, ValueError):
+                pass
+
+    for padrao in ["Produção", "Administrativo", "Regular"]:
+        if padrao not in tipos:
+            tipos.append(padrao)
+
+    for padrao in [0, 15, 30, 45, 60]:
+        if padrao not in intervalos:
+            intervalos.append(padrao)
+
+    intervalos.sort()
+
+    return {
+        "tipos": tipos,
+        "intervalos": intervalos,
+    }
+
+
 def listar_turnos(cliente_id=""):
     query = (
         supabase
@@ -1461,11 +2397,18 @@ def listar_turnos(cliente_id=""):
         .select(
             """
             id,
+            codigo,
             descricao,
             inicio,
             final,
             cliente_id,
-            ativo
+            ativo,
+            tipo_turno,
+            vigencia_inicio,
+            vigencia_fim,
+            intervalo_minutos,
+            permite_hora_extra,
+            ordem
             """
         )
     )
@@ -1496,16 +2439,45 @@ def incluir_turno(descricao, inicio, final, cliente_id, ativo=True):
     if _turno_ja_existe(cliente_id, descricao):
         raise ValueError("Já existe um turno com essa descrição para este cliente.")
 
+    codigo = re.sub(r"[^A-Za-z0-9]+", "_", descricao).strip("_").upper()[:30] or "TURNO"
+
+    # Suporte retrocompatível: páginas antigas enviam somente 5 parâmetros.
+    tipo_turno = "Regular"
+    vigencia_inicio = date.today().isoformat()
+    vigencia_fim = None
+    intervalo_minutos = 0
+    permite_hora_extra = False
+    ordem = 1
+
+    # Permite payload opcional sem quebrar chamadas existentes.
+    if isinstance(ativo, dict):
+        payload_extra = ativo
+        ativo = bool(payload_extra.get("ativo", True))
+        tipo_turno = payload_extra.get("tipo_turno", tipo_turno)
+        vigencia_inicio = payload_extra.get("vigencia_inicio", vigencia_inicio)
+        vigencia_fim = payload_extra.get("vigencia_fim", vigencia_fim)
+        intervalo_minutos = int(payload_extra.get("intervalo_minutos", intervalo_minutos) or 0)
+        permite_hora_extra = bool(payload_extra.get("permite_hora_extra", permite_hora_extra))
+        ordem = int(payload_extra.get("ordem", ordem) or 1)
+        codigo = (payload_extra.get("codigo") or codigo).strip() if payload_extra.get("codigo") else codigo
+
     response = (
         supabase
         .table("turnos")
         .insert(
             {
+                "codigo": codigo,
                 "descricao": descricao,
                 "inicio": inicio,
                 "final": final,
                 "cliente_id": cliente_id,
                 "ativo": ativo,
+                "tipo_turno": tipo_turno,
+                "vigencia_inicio": vigencia_inicio,
+                "vigencia_fim": vigencia_fim,
+                "intervalo_minutos": intervalo_minutos,
+                "permite_hora_extra": permite_hora_extra,
+                "ordem": ordem,
             }
         )
         .execute()
@@ -1529,14 +2501,33 @@ def alterar_turno(turno_id, descricao, inicio, final, ativo=None):
     if cliente_id and _turno_ja_existe(cliente_id, descricao, turno_id=turno_id):
         raise ValueError("Já existe um turno com essa descrição para este cliente.")
 
+    codigo = re.sub(r"[^A-Za-z0-9]+", "_", descricao).strip("_").upper()[:30] or "TURNO"
+
     update_payload = {
+        "codigo": codigo,
         "descricao": descricao,
         "inicio": inicio,
         "final": final,
     }
 
     if ativo is not None:
-        update_payload["ativo"] = ativo
+        if isinstance(ativo, dict):
+            update_payload["ativo"] = bool(ativo.get("ativo", True))
+            if ativo.get("tipo_turno") is not None:
+                update_payload["tipo_turno"] = ativo.get("tipo_turno")
+            if ativo.get("vigencia_inicio") is not None:
+                update_payload["vigencia_inicio"] = ativo.get("vigencia_inicio")
+            update_payload["vigencia_fim"] = ativo.get("vigencia_fim")
+            if ativo.get("intervalo_minutos") is not None:
+                update_payload["intervalo_minutos"] = int(ativo.get("intervalo_minutos") or 0)
+            if ativo.get("permite_hora_extra") is not None:
+                update_payload["permite_hora_extra"] = bool(ativo.get("permite_hora_extra"))
+            if ativo.get("ordem") is not None:
+                update_payload["ordem"] = int(ativo.get("ordem") or 1)
+            if ativo.get("codigo"):
+                update_payload["codigo"] = str(ativo.get("codigo")).strip()
+        else:
+            update_payload["ativo"] = ativo
 
     response = (
         supabase

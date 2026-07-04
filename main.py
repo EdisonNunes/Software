@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 
 from pages.login import show_login_page
 from pages.theme import apply_streamlit_theme
@@ -116,7 +116,7 @@ if st.session_state.get("acesso_suspenso", False):
     st.markdown("<br>", unsafe_allow_html=True)
     col_c, col_btn, col_d = st.columns([2, 1, 2])
     with col_btn:
-        if st.button("OK", use_container_width=True, type="primary"):
+        if st.button("OK", width='stretch', type="primary"):
             supabase_logout = get_supabase_client()
             try:
                 supabase_logout.auth.sign_out()

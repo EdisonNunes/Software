@@ -1,4 +1,4 @@
-﻿# create table auth.users (
+# create table auth.users (
 #   instance_id uuid null,
 #   id uuid not null,
 #   aud character varying(255) null,
@@ -102,17 +102,19 @@
 import streamlit as st
 import pandas as pd
 
-from pages.crud import listar_clientes, listar_usuarios,PERFIS_VALOR, incluir_usuario
-from pages.crud import PERFIS_LABEL, alterar_usuario, excluir_usuario
+from pages.crud import listar_clientes, listar_usuarios, incluir_usuario
+from pages.crud import PERFIS_LABEL, alterar_usuario, excluir_usuario, listar_cargos, listar_opcoes_roles_usuarios
 from components.sidebar import render_app_sidebar
 from components.top_menu import render_top_menu
 from components.session_state import ensure_session_state
+from components.page_banner import render_page_title_banner, render_cliente_banner
 
 if not st.session_state.get("authenticated", False):
     st.switch_page("main.py")
 
 render_app_sidebar()
 render_top_menu()
+render_page_title_banner("Cadastro de Usuários", icon_html="&#128101;")
 
 # =====================================================
 # SESSION STATE
@@ -210,7 +212,8 @@ if st.session_state.usuarios_cliente_selecionado is None:
     )
 
     if col1.button(
-        "⬅️",
+        "\u2B05\uFE0F",
+        key="usuarios_cliente_pag_anterior",
         disabled=(
             st.session_state.usuarios_cliente_pagina <= 0
         )
@@ -226,7 +229,8 @@ if st.session_state.usuarios_cliente_selecionado is None:
     )
 
     if col3.button(
-        "➡️",
+        "\u27A1\uFE0F",
+        key="usuarios_cliente_pag_proxima",
         disabled=(
             st.session_state.usuarios_cliente_pagina + 1
             >= total_paginas
@@ -242,13 +246,39 @@ if st.session_state.usuarios_cliente_selecionado is None:
 # =====================================================
 
 cliente = st.session_state.usuarios_cliente_selecionado
+cargos = listar_cargos()
+cargo_ids = [item.get("id") for item in cargos if item.get("id")]
+roles_disponiveis = [role for role in listar_opcoes_roles_usuarios() if role in ["gerente", "funcionario"]]
+usuarios_empresa = listar_usuarios(cliente["id"])
 
-st.success(
-    f"Empresa Selecionada: "
-    f"{cliente['empresa']}"
-)
+if not roles_disponiveis:
+    roles_disponiveis = ["gerente", "funcionario"]
 
-if st.button("Trocar Empresa"):
+if not cargo_ids:
+    st.error("Nenhum cargo ativo cadastrado na tabela cargos.")
+    st.caption("Cadastre ou reative ao menos um cargo para continuar.")
+    if st.button("Abrir cadastro de cargos", width='stretch', key="usuarios_abrir_cadastro_cargos"):
+        st.session_state.usuarios_retorno_apos_cargo = True
+        st.switch_page("pages/cargos.py")
+    st.stop()
+
+
+def _nome_cargo(cargo_id):
+    for item in cargos:
+        if item.get("id") == cargo_id:
+            return item.get("descricao", "")
+    return ""
+
+
+def _nome_tipo(role):
+    role_norm = (role or "").strip().lower()
+    if role_norm in PERFIS_LABEL:
+        return PERFIS_LABEL[role_norm]
+    return role_norm.title() if role_norm else ""
+
+render_cliente_banner(cliente, len(usuarios_empresa), total_label="Usuários")
+
+if st.button("Trocar Empresa", key="usuarios_trocar_empresa"):
     st.session_state.usuarios_cliente_selecionado = None
     st.session_state.usuarios_usuario_selecionado = None
     st.rerun()
@@ -259,9 +289,7 @@ if st.button("Trocar Empresa"):
 
 if st.session_state.usuarios_aba == "Listar":
 
-    usuarios = listar_usuarios(
-        cliente["id"]
-    )
+    usuarios = usuarios_empresa
 
     total = len(usuarios)
 
@@ -291,7 +319,8 @@ if st.session_state.usuarios_aba == "Listar":
                     "Selecionar",
                     "nome",
                     "email",
-                    "tipo"
+                    "tipo",
+                    "cargo"
                 ]
             ],
             hide_index=True,
@@ -324,7 +353,8 @@ if st.session_state.usuarios_aba == "Listar":
     )
 
     if col1.button(
-        "⬅️",
+        "\u2B05\uFE0F",
+        key="usuarios_pag_anterior",
         disabled=st.session_state.usuarios_pagina <= 0
     ):
         st.session_state.usuarios_pagina -= 1
@@ -338,7 +368,8 @@ if st.session_state.usuarios_aba == "Listar":
     )
 
     if col3.button(
-        "➡️",
+        "\u27A1\uFE0F",
+        key="usuarios_pag_proxima",
         disabled=(
             st.session_state.usuarios_pagina + 1
             >= total_paginas
@@ -349,18 +380,18 @@ if st.session_state.usuarios_aba == "Listar":
 
     col1, col2, col3, col4 = st.columns(4)
 
-    if col1.button("Listar"):
+    if col1.button("Listar", key="usuarios_acao_listar"):
         pass
 
-    if col2.button("Incluir"):
+    if col2.button("Incluir", key="usuarios_acao_incluir"):
         st.session_state.usuarios_aba = "Incluir"
         st.rerun()
 
-    if col3.button("Alterar", disabled=st.session_state.usuarios_usuario_selecionado is None):
+    if col3.button("Alterar", key="usuarios_acao_alterar", disabled=st.session_state.usuarios_usuario_selecionado is None):
         st.session_state.usuarios_aba = "Alterar"
         st.rerun()
 
-    if col4.button("Excluir", disabled=st.session_state.usuarios_usuario_selecionado is None):
+    if col4.button("Excluir", key="usuarios_acao_excluir", disabled=st.session_state.usuarios_usuario_selecionado is None):
         st.session_state.usuarios_aba = "Excluir"
         st.rerun()
 
@@ -383,22 +414,17 @@ elif st.session_state.usuarios_aba == "Incluir":
             type="password"
         )
 
-        # tipo = st.selectbox(
-        #     "Tipo",
-        #     [
-        #         "gerente",
-        #         "funcionario"
-        #     ]
-        # )
-        tipo_exibicao = st.selectbox(
+        tipo = st.selectbox(
             "Tipo",
-            [
-                "Gerente",
-                "Funcionário"
-            ]
+            roles_disponiveis,
+            format_func=_nome_tipo,
         )
 
-        tipo = PERFIS_VALOR[tipo_exibicao]
+        cargo_id = st.selectbox(
+            "Cargo",
+            cargo_ids,
+            format_func=_nome_cargo,
+        )
 
         st.info(
             f"Empresa: "
@@ -408,11 +434,13 @@ elif st.session_state.usuarios_aba == "Incluir":
         col1, col2 = st.columns(2)
 
         salvar = col1.form_submit_button(
-            "Salvar"
+            "Salvar",
+            key="usuarios_incluir_salvar"
         )
 
         voltar = col2.form_submit_button(
-            "Sair sem Salvar"
+            "Sair sem Salvar",
+            key="usuarios_incluir_cancelar"
         )
 
         if salvar:
@@ -422,7 +450,8 @@ elif st.session_state.usuarios_aba == "Incluir":
                 email,
                 senha,
                 tipo,
-                cliente["id"]
+                cliente["id"],
+                cargo_id,
             )
 
             st.success(
@@ -462,40 +491,38 @@ elif st.session_state.usuarios_aba == "Alterar":
                 value=usuario["nome"]
             )
 
-            # tipo = st.selectbox(
-            #     "Tipo",
-            #     [
-            #         "gerente",
-            #         "funcionario"
-            #     ],
-            #     index=0 if usuario["tipo"] == "gerente" else 1
-            # )
-            tipos_exibicao = [
-                    "Gerente",
-                    "Funcionário"
-                ]
+            tipo_atual = (usuario.get("role") or "").strip().lower()
+            if tipo_atual not in roles_disponiveis:
+                tipo_atual = roles_disponiveis[0]
 
-            tipo_atual = PERFIS_LABEL.get(
-                usuario["tipo"],
-                "Gerente"
-            )
-
-            tipo_exibicao = st.selectbox(
+            tipo = st.selectbox(
                 "Tipo",
-                tipos_exibicao,
-                index=tipos_exibicao.index(tipo_atual)
+                roles_disponiveis,
+                index=roles_disponiveis.index(tipo_atual),
+                format_func=_nome_tipo,
             )
 
-            tipo = PERFIS_VALOR[tipo_exibicao]
+            cargo_atual = usuario.get("cargo_id")
+            if cargo_atual not in cargo_ids:
+                cargo_atual = cargo_ids[0]
+
+            cargo_id = st.selectbox(
+                "Cargo",
+                cargo_ids,
+                index=cargo_ids.index(cargo_atual),
+                format_func=_nome_cargo,
+            )
 
             col1, col2 = st.columns(2)
 
             salvar = col1.form_submit_button(
-                "Salvar"
+                "Salvar",
+                key="usuarios_alterar_salvar"
             )
 
             voltar = col2.form_submit_button(
-                "Cancelar"
+                "Cancelar",
+                key="usuarios_alterar_cancelar"
             )
 
             if salvar:
@@ -503,7 +530,8 @@ elif st.session_state.usuarios_aba == "Alterar":
                 alterar_usuario(
                     usuario["id"],
                     nome,
-                    tipo
+                    tipo,
+                    cargo_id,
                 )
 
                 st.success(
@@ -544,7 +572,8 @@ elif st.session_state.usuarios_aba == "Excluir":
         col1, col2 = st.columns(2)
 
         if col1.button(
-            "Excluir Usuário"
+            "Excluir Usuário",
+            key="usuarios_confirmar_exclusao"
         ):
 
             excluir_usuario(
@@ -561,7 +590,8 @@ elif st.session_state.usuarios_aba == "Excluir":
             st.rerun()
 
         if col2.button(
-            "Voltar"
+            "Voltar",
+            key="usuarios_excluir_voltar"
         ):
 
             st.session_state.usuarios_aba = "Listar"
